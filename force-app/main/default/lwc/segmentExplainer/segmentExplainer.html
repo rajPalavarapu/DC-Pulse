@@ -1,0 +1,343 @@
+<template>
+    <lightning-card>
+
+        <!-- Loading Spinner -->
+        <template lwc:if={isLoading}>
+            <div class="slds-align_absolute-center slds-p-around_large">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <div class="slds-p-around_medium">
+            <lightning-tabset>
+
+                <!-- ── TAB 1: SEGMENT ANALYZER ── -->
+                <lightning-tab label="Segment Analyzer" value="segment">
+
+                    <!-- Segment Health Dashboard -->
+                    <template lwc:if={totalSegmentCount}>
+                        <div class="slds-box slds-m-bottom_medium">
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_small">
+                                <div class="slds-col">
+                                    <p class="slds-text-title_caps">Segment Health Overview</p>
+                                    <p class="slds-text-color_weak slds-text-body_small">{totalSegmentCount} segments in this org</p>
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-gutters">
+
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="slds-box slds-text-align_center">
+                                        <lightning-icon icon-name="utility:error" size="small" variant="error" class="slds-m-bottom_x-small"></lightning-icon>
+                                        <p class="slds-text-heading_medium">{zeroPopulationCount}</p>
+                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Zero Population</p>
+                                        <template lwc:if={hasZeroPopulation}>
+                                            <p class="slds-text-body_small slds-text-color_weak">{zeroPopulationNames}</p>
+                                        </template>
+                                        <template lwc:else>
+                                            <p class="slds-text-body_small slds-text-color_weak">None — all segments have members</p>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="slds-box slds-text-align_center">
+                                        <lightning-icon icon-name="utility:ban" size="small" variant="warning" class="slds-m-bottom_x-small"></lightning-icon>
+                                        <p class="slds-text-heading_medium">{inactiveCount}</p>
+                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Inactive</p>
+                                        <template lwc:if={hasInactive}>
+                                            <p class="slds-text-body_small slds-text-color_weak">{inactiveNames}</p>
+                                        </template>
+                                        <template lwc:else>
+                                            <p class="slds-text-body_small slds-text-color_weak">None — all segments are active</p>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="slds-box slds-text-align_center">
+                                        <lightning-icon icon-name="utility:clock" size="small" variant="warning" class="slds-m-bottom_x-small"></lightning-icon>
+                                        <p class="slds-text-heading_medium">{manualRefreshCount}</p>
+                                        <p class="slds-text-title_caps slds-m-bottom_x-small">No Auto-Refresh</p>
+                                        <template lwc:if={hasManualRefresh}>
+                                            <p class="slds-text-body_small slds-text-color_weak">{manualRefreshNames}</p>
+                                        </template>
+                                        <template lwc:else>
+                                            <p class="slds-text-body_small slds-text-color_weak">None — all segments have a schedule</p>
+                                        </template>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Segment Selector -->
+                    <lightning-combobox
+                        name="segment"
+                        label="Select Segment"
+                        placeholder="Choose a segment..."
+                        value={selectedSegment}
+                        options={segmentOptions}
+                        onchange={handleSegmentChange}>
+                    </lightning-combobox>
+
+                    <!-- Segment Details Panel -->
+                    <template lwc:if={selectedSegmentData}>
+                        <div class="slds-m-top_large">
+
+                            <!-- Stats Row -->
+                            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="slds-box slds-theme_shade slds-text-align_center">
+                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Total Population</p>
+                                        <p class="slds-text-heading_large">{selectedSegmentData.lastSegmentMemberCount}</p>
+                                    </div>
+                                </div>
+
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="slds-box slds-theme_shade slds-text-align_center">
+                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Status</p>
+                                        <p class="slds-text-heading_large">{selectedSegmentData.segmentStatus}</p>
+                                    </div>
+                                </div>
+
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="slds-box slds-theme_shade slds-text-align_center">
+                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Built On</p>
+                                        <p class="slds-text-heading_small">{builtOnLabel}</p>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- DMO Warning -->
+                            <template lwc:if={showDmoWarning}>
+                                <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_medium" role="alert">
+                                    <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                    <strong>Activation Warning:</strong> This segment is built on the Individual DMO, not Unified Individual. Activating this segment may result in duplicate profiles being sent to the destination.
+                                </div>
+                            </template>
+
+                            <!-- Segment Details -->
+                            <div class="slds-box slds-m-bottom_medium">
+                                <p class="slds-text-title_caps slds-m-bottom_small">Segment Details</p>
+                                <lightning-layout multiple-rows>
+                                    <lightning-layout-item size="6" padding="around-small">
+                                        <p><strong>API Name:</strong> {selectedSegmentData.apiName}</p>
+                                    </lightning-layout-item>
+                                    <lightning-layout-item size="6" padding="around-small">
+                                        <p><strong>Refresh Schedule:</strong> {publishIntervalFormatted}</p>
+                                    </lightning-layout-item>
+                                    <lightning-layout-item size="6" padding="around-small">
+                                        <p><strong>Last Modified:</strong> {lastModifiedFormatted}</p>
+                                    </lightning-layout-item>
+                                    <lightning-layout-item size="6" padding="around-small">
+                                        <p><strong>Lookback Period:</strong> {selectedSegmentData.lookbackPeriod}</p>
+                                    </lightning-layout-item>
+                                </lightning-layout>
+                            </div>
+
+                            <!-- Last Refresh Health -->
+                            <div class="slds-box slds-m-bottom_medium">
+                                <p class="slds-text-title_caps slds-m-bottom_small">Refresh Health</p>
+                                <div class="slds-grid slds-gutters slds-wrap">
+                                    <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                        <p class="slds-text-color_weak slds-text-body_small">Schedule</p>
+                                        <p><strong>{publishIntervalFormatted}</strong></p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                        <p class="slds-text-color_weak slds-text-body_small">Last Updated</p>
+                                        <p><strong>{refreshStatusLabel}</strong></p>
+                                    </div>
+                                </div>
+                                <template lwc:if={isStale}>
+                                    <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-top_small" role="alert">
+                                        <lightning-icon icon-name="utility:clock" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                        <strong>Stale Data Warning:</strong> This segment has not been refreshed in {daysSinceRefresh} days. Population counts may not reflect current data.
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- ── FEATURE 3: Criteria + Filter Limit Checker ── -->
+                            <template lwc:if={parsedCriteria}>
+                                <div class="slds-box slds-m-bottom_medium">
+                                    <p class="slds-text-title_caps slds-m-bottom_small">Segment Criteria</p>
+                                    <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_x-small">Filters applied to build this segment population</p>
+
+                                    <!-- Filter Count Bar -->
+                                    <template lwc:if={filterLimitCritical}>
+                                        <div class="slds-notify slds-notify_alert slds-theme_error slds-m-bottom_small" role="alert">
+                                            <lightning-icon icon-name="utility:error" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                            <strong>Critical: {filterCountLabel}</strong> — You are at the limit. Adding more filters will cause segment errors. Remove unused filters immediately.
+                                        </div>
+                                    </template>
+                                    <template lwc:elseif={filterLimitWarning}>
+                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_small" role="alert">
+                                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                            <strong>Warning: {filterCountLabel}</strong> — Approaching the 50-filter limit. Consider consolidating filters or removing unused criteria groups.
+                                        </div>
+                                    </template>
+
+                                    <!-- Lookback Warning -->
+                                    <template lwc:if={hasNoLookback}>
+                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_small" role="alert">
+                                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                            <strong>No Lookback Period set.</strong> Without a lookback period, this segment evaluates all historical data rather than a rolling time window. This can significantly inflate segment size and slow refresh times.
+                                        </div>
+                                    </template>
+
+                                    <!-- Readable Criteria -->
+                                    <div class="slds-box slds-theme_shade">
+                                        <p class="slds-text-body_regular">{parsedCriteria}</p>
+                                    </div>
+
+                                    <!-- Filter Count (non-warning state) -->
+                                    <template lwc:if={filterLimitWarning}>
+                                    </template>
+                                    <template lwc:else>
+                                        <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">{filterCountLabel}</p>
+                                    </template>
+
+                                </div>
+                            </template>
+
+                            <!-- Activation Readiness Panel -->
+                            <div class="slds-box slds-m-bottom_medium">
+                                <p class="slds-text-title_caps slds-m-bottom_x-small">Activation Readiness</p>
+                                <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_medium">Based on latest published snapshot. Shows how many profiles will reach the destination per channel.</p>
+
+                                <template lwc:if={isLoadingReadiness}>
+                                    <div class="slds-align_absolute-center slds-p-around_medium">
+                                        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                                    </div>
+                                </template>
+
+                                <template lwc:if={activationReadiness}>
+                                    <div class="slds-grid slds-gutters slds-m-bottom_medium">
+
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div class="slds-box slds-text-align_center">
+                                                <p class="slds-text-title_caps slds-m-bottom_x-small">Publishable Reach</p>
+                                                <p class="slds-text-heading_large">{activationReadiness.total}</p>
+                                                <p class="slds-text-color_weak slds-text-body_small">Profiles in published snapshot</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div class="slds-box slds-text-align_center">
+                                                <p class="slds-text-title_caps slds-m-bottom_x-small">Email Reachable</p>
+                                                <p class="slds-text-heading_large">{emailCoveragePercent}%</p>
+                                                <p class="slds-text-color_weak">{activationReadiness.email} profiles</p>
+                                                <p class="slds-text-color_weak slds-text-body_small">Have at least one email address</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div class="slds-box slds-text-align_center">
+                                                <p class="slds-text-title_caps slds-m-bottom_x-small">Phone Reachable</p>
+                                                <p class="slds-text-heading_large">{phoneCoveragePercent}%</p>
+                                                <p class="slds-text-color_weak">{activationReadiness.phone} profiles</p>
+                                                <p class="slds-text-color_weak slds-text-body_small">Have at least one phone number</p>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- Missing Email -->
+                                    <template lwc:if={emailDropWarning}>
+                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_x-small" role="alert">
+                                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                            <strong>{emailDropCount} profiles will be dropped on email activation</strong> — these profiles have no email contact point.
+                                            <lightning-button
+                                                label={missingEmailButtonLabel}
+                                                variant="base"
+                                                class="slds-m-left_small"
+                                                onclick={handleViewMissingEmail}>
+                                            </lightning-button>
+                                        </div>
+                                        <template lwc:if={showMissingEmail}>
+                                            <div class="slds-box slds-m-bottom_x-small">
+                                                <template lwc:if={isLoadingMissingEmail}>
+                                                    <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                                                </template>
+                                                <template lwc:if={missingEmailProfiles}>
+                                                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">Showing first 10 profiles missing email. For full list use the query below.</p>
+                                                    <lightning-datatable
+                                                        key-field="unifiedId"
+                                                        data={missingEmailProfiles}
+                                                        columns={missingEmailColumns}
+                                                        hide-checkbox-column>
+                                                    </lightning-datatable>
+                                                    <div class="slds-box slds-theme_shade slds-m-top_small">
+                                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Run in Data Cloud Query Editor for full list:</p>
+                                                        <pre style="white-space: pre-wrap; font-size: 11px;">{missingEmailSql}</pre>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </template>
+
+                                    <!-- Missing Phone -->
+                                    <template lwc:if={phoneDropWarning}>
+                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_x-small" role="alert">
+                                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                            <strong>{phoneDropCount} profiles will be dropped on phone/SMS activation</strong> — these profiles have no phone contact point.
+                                            <lightning-button
+                                                label={missingPhoneButtonLabel}
+                                                variant="base"
+                                                class="slds-m-left_small"
+                                                onclick={handleViewMissingPhone}>
+                                            </lightning-button>
+                                        </div>
+                                        <template lwc:if={showMissingPhone}>
+                                            <div class="slds-box slds-m-bottom_x-small">
+                                                <template lwc:if={isLoadingMissingPhone}>
+                                                    <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                                                </template>
+                                                <template lwc:if={missingPhoneProfiles}>
+                                                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">Showing first 10 profiles missing phone. For full list use the query below.</p>
+                                                    <lightning-datatable
+                                                        key-field="unifiedId"
+                                                        data={missingPhoneProfiles}
+                                                        columns={missingPhoneColumns}
+                                                        hide-checkbox-column>
+                                                    </lightning-datatable>
+                                                    <div class="slds-box slds-theme_shade slds-m-top_small">
+                                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Run in Data Cloud Query Editor for full list:</p>
+                                                        <pre style="white-space: pre-wrap; font-size: 11px;">{missingPhoneSql}</pre>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </template>
+
+                                </template>
+
+                                <template lwc:if={noMembershipTable}>
+                                    <p class="slds-text-color_weak">Segment has not been published. Publish the segment to view activation readiness metrics.</p>
+                                </template>
+
+                            </div>
+
+                        </div>
+                    </template>
+
+                    <!-- Error -->
+                    <template lwc:if={errorMessage}>
+                        <div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_medium" role="alert">
+                            <span>{errorMessage}</span>
+                        </div>
+                    </template>
+
+                </lightning-tab>
+
+                <!-- ── TAB 2: IR HEALTH ── -->
+                <lightning-tab label="IR Health" value="ir">
+                    <c-ir-health></c-ir-health>
+                </lightning-tab>
+
+            </lightning-tabset>
+        </div>
+    </lightning-card>
+</template>
