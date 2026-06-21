@@ -1,13 +1,16 @@
 @isTest
 private class DataCloudServiceTest {
 
-    private static void setupToken() {
-        DataCloudService.testToken = 'testtoken123';
+    private static void setupConfig() {
+        DC_Lens_Config__c config = new DC_Lens_Config__c();
+        config.Consumer_Key__c = 'testkey';
+        config.Consumer_Secret__c = 'testsecret';
+        upsert config;
     }
 
     @isTest
     static void testGetSegments() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         String result = DataCloudService.getSegments();
@@ -18,7 +21,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetSegmentDetails() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         String result = DataCloudService.getSegmentDetails('TestSeg');
@@ -28,7 +31,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetActivationReadiness() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         Map<String, Integer> result = DataCloudService.getActivationReadiness('TestMembershipTable__dlm', 'UnifiedIndividual__dlm');
@@ -41,7 +44,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetActivationReadinessEmptyData() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('emptyData'));
         Test.startTest();
         Map<String, Integer> result = DataCloudService.getActivationReadiness('TestMembershipTable__dlm', 'UnifiedIndividual__dlm');
@@ -51,7 +54,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetIrSummary() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         Map<String, Object> result = DataCloudService.getIrSummary();
@@ -64,7 +67,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetIrSummaryZeroUnified() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('emptyData'));
         Test.startTest();
         Map<String, Object> result = DataCloudService.getIrSummary();
@@ -74,7 +77,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetSuspiciousMerges() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, Object>> result = DataCloudService.getSuspiciousMerges(5);
@@ -86,7 +89,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetSuspiciousMergesEmpty() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('emptyData'));
         Test.startTest();
         List<Map<String, Object>> result = DataCloudService.getSuspiciousMerges(5);
@@ -96,7 +99,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testSearchUnifiedProfiles() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, String>> result = DataCloudService.searchUnifiedProfiles('John');
@@ -106,7 +109,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetProfileMergeDetail() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, String>> result = DataCloudService.getProfileMergeDetail('uid1');
@@ -120,7 +123,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetMissingContactProfilesEmail() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, String>> result = DataCloudService.getMissingContactProfiles('TestTable__dlm', 'email');
@@ -132,7 +135,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetMissingContactProfilesPhone() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, String>> result = DataCloudService.getMissingContactProfiles('TestTable__dlm', 'phone');
@@ -142,7 +145,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testQueryDataCloud() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         String result = DataCloudService.queryDataCloud('SELECT COUNT() FROM UnifiedIndividual__dlm');
@@ -152,7 +155,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testQueryDataCloudError() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
         Test.startTest();
         try {
@@ -165,8 +168,21 @@ private class DataCloudServiceTest {
     }
 
     @isTest
+    static void testMissingConfig() {
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        try {
+            DataCloudService.getSegments();
+            System.assert(false, 'Expected exception not thrown');
+        } catch (CalloutException e) {
+            System.assert(e.getMessage().contains('missing Consumer Key'));
+        }
+        Test.stopTest();
+    }
+
+    @isTest
     static void testGetSegmentsApiError() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
         Test.startTest();
         try {
@@ -180,7 +196,7 @@ private class DataCloudServiceTest {
 
     @isTest
     static void testGetSegmentDetailsApiError() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
         Test.startTest();
         try {

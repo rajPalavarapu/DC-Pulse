@@ -2,22 +2,32 @@ public with sharing class DataCloudService {
 
     private static final String API_VERSION = 'v66.0';
 
-    @TestVisible
-    private static String testToken = null;
-
     private static String getBaseUrl() {
         return URL.getOrgDomainUrl().toExternalForm();
     }
 
     private static String getAccessToken() {
-        if (testToken != null) {
-            return testToken;
+        DC_Lens_Config__c config = DC_Lens_Config__c.getInstance();
+        if (config == null || config.Consumer_Key__c == null || config.Consumer_Secret__c == null) {
+            throw new CalloutException('DC Pulse Config custom setting is missing Consumer Key or Secret.');
         }
-        String token = UserInfo.getSessionId();
-        if (String.isBlank(token)) {
-            throw new CalloutException('No active session found. Please ensure you are logged into Salesforce.');
+
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(getBaseUrl() + '/services/oauth2/token');
+        req.setMethod('POST');
+        req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+        req.setBody(
+            'grant_type=client_credentials' +
+            '&client_id=' + EncodingUtil.urlEncode(config.Consumer_Key__c, 'UTF-8') +
+            '&client_secret=' + EncodingUtil.urlEncode(config.Consumer_Secret__c, 'UTF-8')
+        );
+
+        HttpResponse res = new Http().send(req);
+        if (res.getStatusCode() == 200) {
+            Map<String, Object> tokenResponse = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+            return (String) tokenResponse.get('access_token');
         }
-        return token;
+        throw new CalloutException('Failed to get access token: ' + res.getStatus() + ' ' + res.getBody());
     }
 
     private static HttpResponse makeGetRequest(String endpoint) {

@@ -1,13 +1,16 @@
 @isTest
 private class DataCloudControllerTest {
 
-    private static void setupToken() {
-        DataCloudService.testToken = 'testtoken123';
+    private static void setupConfig() {
+        DC_Lens_Config__c config = new DC_Lens_Config__c();
+        config.Consumer_Key__c = 'testkey';
+        config.Consumer_Secret__c = 'testsecret';
+        upsert config;
     }
 
     @isTest
     static void testGetSegments() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         String result = DataCloudController.getSegments();
@@ -17,7 +20,7 @@ private class DataCloudControllerTest {
 
     @isTest
     static void testGetSegmentDetails() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         String result = DataCloudController.getSegmentDetails('TestSeg');
@@ -27,7 +30,7 @@ private class DataCloudControllerTest {
 
     @isTest
     static void testGetActivationReadiness() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         Map<String, Integer> result = DataCloudController.getActivationReadiness('TestTable__dlm', 'UnifiedIndividual__dlm');
@@ -37,7 +40,7 @@ private class DataCloudControllerTest {
 
     @isTest
     static void testGetMissingContactProfiles() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, String>> result = DataCloudController.getMissingContactProfiles('TestTable__dlm', 'email');
@@ -47,7 +50,7 @@ private class DataCloudControllerTest {
 
     @isTest
     static void testQueryDataCloud() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         String result = DataCloudController.queryDataCloud('SELECT COUNT() FROM UnifiedIndividual__dlm');
@@ -57,7 +60,7 @@ private class DataCloudControllerTest {
 
     @isTest
     static void testGetIrSummary() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         Map<String, Object> result = DataCloudController.getIrSummary();
@@ -67,7 +70,7 @@ private class DataCloudControllerTest {
 
     @isTest
     static void testGetSuspiciousMerges() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, Object>> result = DataCloudController.getSuspiciousMerges(5);
@@ -77,7 +80,7 @@ private class DataCloudControllerTest {
 
     @isTest
     static void testSearchUnifiedProfiles() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, String>> result = DataCloudController.searchUnifiedProfiles('John');
@@ -87,7 +90,7 @@ private class DataCloudControllerTest {
 
     @isTest
     static void testGetProfileMergeDetail() {
-        setupToken();
+        setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
         List<Map<String, String>> result = DataCloudController.getProfileMergeDetail('uid1');
