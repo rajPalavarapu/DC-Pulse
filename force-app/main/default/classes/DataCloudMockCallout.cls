@@ -11,17 +11,6 @@ global class DataCloudMockCallout implements HttpCalloutMock {
         res.setHeader('Content-Type', 'application/json');
         String endpoint = req.getEndpoint();
 
-        if (endpoint.contains('/oauth2/token')) {
-            if (mode == 'tokenError') {
-                res.setStatusCode(401);
-                res.setBody('{"error":"invalid_client"}');
-            } else {
-                res.setStatusCode(200);
-                res.setBody('{"access_token":"testtoken123"}');
-            }
-            return res;
-        }
-
         if (mode == 'apiError') {
             res.setStatusCode(500);
             res.setBody('{"error":"server error"}');
