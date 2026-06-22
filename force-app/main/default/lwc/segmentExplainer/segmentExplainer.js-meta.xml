@@ -7,13 +7,6 @@
         <target>lightning__RecordPage</target>
         <target>lightning__HomePage</target>
     </targets>
-    <targetConfigs>
-        <targetConfig targets="lightning__RecordPage">
-            <objects>
-                <object>MarketSegment</object>
-            </objects>
-        </targetConfig>
-    </targetConfigs>
     <masterLabel>DC Pulse</masterLabel>
     <description>DC Pulse - Analyze segment health, activation readiness, and identity resolution diagnostics</description>
 </LightningComponentBundle>
