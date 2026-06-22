@@ -250,4 +250,71 @@ public with sharing class DataCloudService {
         }
         return records;
     }
+
+    public static String getActivations() {
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/activations');
+        if (res.getStatusCode() == 200) return res.getBody();
+        throw new CalloutException('Failed to get activations: ' + res.getStatus() + ' ' + res.getBody());
+    }
+
+    public static String getCalculatedInsights() {
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/calculated-insights');
+        if (res.getStatusCode() == 200) return res.getBody();
+        throw new CalloutException('Failed to get calculated insights: ' + res.getStatus() + ' ' + res.getBody());
+    }
+
+    public static String getActivationPlatforms() {
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/activation-external-platforms');
+        if (res.getStatusCode() == 200) return res.getBody();
+        throw new CalloutException('Failed to get activation platforms: ' + res.getStatus() + ' ' + res.getBody());
+    }
+
+    public static Map<String, Integer> getDmoCoverage() {
+        List<String> dmos = new List<String>{
+            'ssot__Individual__dlm',
+            'UnifiedIndividual__dlm',
+            'IndividualIdentityLink__dlm',
+            'ssot__ContactPointEmail__dlm',
+            'ssot__ContactPointPhone__dlm',
+            'ssot__EngagementInteraction__dlm'
+        };
+        Map<String, Integer> coverage = new Map<String, Integer>();
+        for (String dmo : dmos) {
+            HttpResponse res = makePostRequest(
+                '/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default',
+                '{"sql":"SELECT COUNT() FROM ' + dmo + '"}'
+            );
+            coverage.put(dmo, extractCount(res));
+        }
+        return coverage;
+    }
+
+    public static String getDataTransforms() {
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/data-transforms');
+        if (res.getStatusCode() == 200) return res.getBody();
+        throw new CalloutException('Failed to get data transforms: ' + res.getStatus() + ' ' + res.getBody());
+    }
+
+    public static String getDataStreams() {
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/data-streams');
+        if (res.getStatusCode() == 200) return res.getBody();
+        throw new CalloutException('Failed to get data streams: ' + res.getStatus() + ' ' + res.getBody());
+    }
+
+    public static Map<String, Integer> getOrgContactPointCoverage() {
+        Map<String, Integer> results = new Map<String, Integer>();
+        String totalSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm';
+        String emailSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm ui ' +
+            'LEFT JOIN IndividualIdentityLink__dlm lnk ON ui.ssot__Id__c = lnk.UnifiedRecordId__c ' +
+            'LEFT JOIN ssot__ContactPointEmail__dlm cpe ON lnk.SourceRecordId__c = cpe.ssot__PartyId__c ' +
+            'WHERE cpe.ssot__Id__c IS NOT NULL';
+        String phoneSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm ui ' +
+            'LEFT JOIN IndividualIdentityLink__dlm lnk ON ui.ssot__Id__c = lnk.UnifiedRecordId__c ' +
+            'LEFT JOIN ssot__ContactPointPhone__dlm cpp ON lnk.SourceRecordId__c = cpp.ssot__PartyId__c ' +
+            'WHERE cpp.ssot__Id__c IS NOT NULL';
+        results.put('total', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + totalSql.escapeJava() + '"}')));
+        results.put('withEmail', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + emailSql.escapeJava() + '"}')));
+        results.put('withPhone', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + phoneSql.escapeJava() + '"}')));
+        return results;
+    }
 }

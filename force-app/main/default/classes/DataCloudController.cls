@@ -44,4 +44,39 @@ public with sharing class DataCloudController {
     public static List<Map<String, String>> getProfileMergeDetail(String unifiedId) {
         return DataCloudService.getProfileMergeDetail(unifiedId);
     }
+
+    @AuraEnabled(cacheable=false)
+    public static String getActivations() {
+        return DataCloudService.getActivations();
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static String getCalculatedInsights() {
+        return DataCloudService.getCalculatedInsights();
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static String getActivationPlatforms() {
+        return DataCloudService.getActivationPlatforms();
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static Map<String, Integer> getDmoCoverage() {
+        return DataCloudService.getDmoCoverage();
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static Map<String, Integer> getOrgContactPointCoverage() {
+        return DataCloudService.getOrgContactPointCoverage();
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static String getDataTransforms() {
+        return DataCloudService.getDataTransforms();
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static String getDataStreams() {
+        return DataCloudService.getDataStreams();
+    }
 }

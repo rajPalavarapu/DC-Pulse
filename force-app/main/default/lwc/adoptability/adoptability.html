@@ -1,0 +1,290 @@
+<template>
+    <!-- Loading -->
+    <template lwc:if={isLoading}>
+        <div class="slds-align_absolute-center slds-p-around_large">
+            <lightning-spinner alternative-text="Loading adoption data" size="medium"></lightning-spinner>
+        </div>
+    </template>
+
+    <!-- Error -->
+    <template lwc:if={errorMessage}>
+        <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_medium" role="alert">
+            <span>{errorMessage}</span>
+        </div>
+    </template>
+
+    <template lwc:if={hasLoaded}>
+
+        <!-- Refresh Button -->
+        <div class="slds-grid slds-grid_align-end slds-m-bottom_small">
+            <lightning-button label="Refresh" icon-name="utility:refresh" onclick={handleRefresh}></lightning-button>
+        </div>
+
+        <!-- Maturity Score Banner -->
+        <div class="slds-box slds-m-bottom_medium" style="background-color: #f3f3f3;">
+            <div class="slds-grid slds-gutters slds-grid_vertical-align-center slds-m-bottom_small">
+                <div class="slds-col">
+                    <p class="slds-text-title_caps">Adoption Maturity Score</p>
+                    <p class="slds-text-heading_large">{maturityScore} <span class="slds-text-body_regular slds-text-color_weak">/ 100</span></p>
+                </div>
+                <div class="slds-col slds-text-align_right">
+                    <p class="slds-text-heading_small">{maturityLabel}</p>
+                    <p class="slds-text-body_small slds-text-color_weak">Ingestion → Unification → Activation → Optimization</p>
+                </div>
+            </div>
+            <div style="background-color: #dddbda; border-radius: 4px; height: 12px; width: 100%;">
+                <div style={maturityBarStyle}></div>
+            </div>
+        </div>
+
+        <!-- Cards Row 1 -->
+        <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+
+            <!-- Segment Adoption -->
+            <div class="slds-col slds-size_1-of-3 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={segmentAdoptionIcon} size="x-small" variant={segmentAdoptionVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">Segment Adoption</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{totalSegments} <span class="slds-text-body_regular slds-text-color_weak">total</span></p>
+                    <div class="slds-m-top_x-small">
+                        <p class="slds-text-body_small"><strong>{activeSegments}</strong> active</p>
+                        <p class="slds-text-body_small"><strong>{zeroPopCount}</strong> zero population</p>
+                        <p class="slds-text-body_small"><strong>{neverActivatedCount}</strong> never activated</p>
+                    </div>
+                    <template lwc:if={deadEndCount}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">⚠ {deadEndCount} dead end(s)</p>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Activation Reach -->
+            <div class="slds-col slds-size_1-of-3 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={activationReachIcon} size="x-small" variant={activationReachVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">Activation Reach</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{activationReachPercent}% <span class="slds-text-body_regular slds-text-color_weak">activated</span></p>
+                    <div class="slds-m-top_x-small">
+                        <p class="slds-text-body_small"><strong>{totalActivations}</strong> activations configured</p>
+                        <p class="slds-text-body_small"><strong>{neverActivatedCount}</strong> segments never published</p>
+                    </div>
+                    <template lwc:if={neverActivatedCount}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">⚠ {neverActivatedCount} segment(s) burning credits with no activation</p>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Platform Coverage -->
+            <div class="slds-col slds-size_1-of-3 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={platformCoverageIcon} size="x-small" variant={platformCoverageVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">Platform Coverage</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{totalPlatforms} <span class="slds-text-body_regular slds-text-color_weak">platform(s) connected</span></p>
+                    <div class="slds-m-top_x-small">
+                        <template for:each={platformNames} for:item="name">
+                            <p key={name} class="slds-text-body_small">✓ {name}</p>
+                        </template>
+                        <template lwc:if={noPlatforms}>
+                            <p class="slds-text-body_small slds-text-color_error">No external platforms configured</p>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Cards Row 2 -->
+        <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+
+            <!-- DMO Coverage -->
+            <div class="slds-col slds-size_1-of-3 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={dmoCoverageIcon} size="x-small" variant={dmoCoverageVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">DMO Coverage</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{populatedDmoCount} / {totalDmoCount} <span class="slds-text-body_regular slds-text-color_weak">populated</span></p>
+                    <div class="slds-m-top_x-small">
+                        <template for:each={dmoRows} for:item="dmo">
+                            <div key={dmo.key} class="slds-grid slds-grid_vertical-align-center slds-m-bottom_xx-small">
+                                <lightning-icon icon-name={dmo.icon} size="xx-small" variant={dmo.variant} class="slds-m-right_xx-small"></lightning-icon>
+                                <p class="slds-text-body_small">{dmo.label}</p>
+                                <template lwc:if={dmo.populated}>
+                                    <p class="slds-text-body_small slds-text-color_weak slds-m-left_x-small">({dmo.count})</p>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Point Activatability -->
+            <div class="slds-col slds-size_1-of-3 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={cpIcon} size="x-small" variant={cpVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">Contact Point Activatability</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{cpTotal} <span class="slds-text-body_regular slds-text-color_weak">unified profiles</span></p>
+                    <div class="slds-m-top_x-small">
+                        <p class="slds-text-body_small slds-m-bottom_xx-small">Email reachable</p>
+                        <div style="background-color: #dddbda; border-radius: 4px; height: 8px; width: 100%; margin-bottom: 4px;">
+                            <div style={emailBarStyle}></div>
+                        </div>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">{cpEmailPercent}% ({contactPointCoverage.withEmail} profiles)</p>
+                        <p class="slds-text-body_small slds-m-bottom_xx-small">Phone reachable</p>
+                        <div style="background-color: #dddbda; border-radius: 4px; height: 8px; width: 100%; margin-bottom: 4px;">
+                            <div style={phoneBarStyle}></div>
+                        </div>
+                        <p class="slds-text-body_small slds-text-color_weak">{cpPhonePercent}% ({contactPointCoverage.withPhone} profiles)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segment Freshness -->
+            <div class="slds-col slds-size_1-of-3 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={freshnessIcon} size="x-small" variant={freshnessVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">Segment Freshness</p>
+                    </div>
+                    <div class="slds-m-top_x-small">
+                        <p class="slds-text-body_small"><strong>{freshSegments.length}</strong> updated within 30 days</p>
+                        <p class="slds-text-body_small"><strong>{warningSegments.length}</strong> stale (30–90 days)</p>
+                        <p class="slds-text-body_small"><strong>{staleSegments.length}</strong> dead (90+ days)</p>
+                    </div>
+                    <template lwc:if={staleSegments.length}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">⚠ {staleSegments.length} segment(s) not touched in 90+ days</p>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Cards Row 3 — Transforms + Streams -->
+        <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+
+            <!-- Data Transform Health -->
+            <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={transformIcon} size="x-small" variant={transformVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">Data Transform Health</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{totalTransforms} <span class="slds-text-body_regular slds-text-color_weak">transform(s) configured</span></p>
+                    <template lwc:if={noTransforms}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">✗ No data transforms found — DMOs may be populated from raw streams only with no transformation layer</p>
+                    </template>
+                    <template lwc:else>
+                        <div class="slds-m-top_x-small">
+                            <p class="slds-text-body_small"><strong>{healthyTransforms.length}</strong> running successfully</p>
+                            <p class="slds-text-body_small"><strong>{staleTransforms.length}</strong> stale (not run in 7+ days)</p>
+                            <p class="slds-text-body_small"><strong>{neverRunTransforms.length}</strong> never run</p>
+                            <p class="slds-text-body_small"><strong>{failedTransforms.length}</strong> failed on last run</p>
+                        </div>
+                        <template for:each={transformsWithJobStatus} for:item="t">
+                            <div key={t.id} class="slds-grid slds-grid_vertical-align-center slds-m-top_xx-small">
+                                <lightning-icon icon-name={t.statusIcon} size="xx-small" variant={t.statusVariant} class="slds-m-right_xx-small"></lightning-icon>
+                                <p class="slds-text-body_small">{t.name}</p>
+                                <p class="slds-text-body_small slds-text-color_weak slds-m-left_x-small">— {t.statusLabel}</p>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Data Stream Freshness -->
+            <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={streamIcon} size="x-small" variant={streamVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">Data Stream Freshness</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{totalStreams} <span class="slds-text-body_regular slds-text-color_weak">stream(s) configured</span></p>
+                    <template lwc:if={noStreams}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">✗ No data streams found — Data Cloud has no active ingestion pipelines</p>
+                    </template>
+                    <template lwc:else>
+                        <div class="slds-m-top_x-small">
+                            <p class="slds-text-body_small"><strong>{freshStreams.length}</strong> ingesting on schedule</p>
+                            <p class="slds-text-body_small"><strong>{staleStreams.length}</strong> stale or never run</p>
+                        </div>
+                        <template for:each={streamsWithStatus} for:item="s">
+                            <div key={s.id} class="slds-grid slds-grid_vertical-align-center slds-m-top_xx-small">
+                                <lightning-icon icon-name={s.statusIcon} size="xx-small" variant={s.statusVariant} class="slds-m-right_xx-small"></lightning-icon>
+                                <p class="slds-text-body_small">{s.name}</p>
+                                <p class="slds-text-body_small slds-text-color_weak slds-m-left_x-small">— {s.statusLabel}</p>
+                                <p class="slds-text-body_small slds-text-color_weak slds-m-left_x-small">({s.connectorType})</p>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Cards Row 4 — CIs + IR -->
+        <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+
+            <!-- Calculated Insights -->
+            <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={ciIcon} size="x-small" variant={ciVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">Calculated Insights</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{totalCIs} <span class="slds-text-body_regular slds-text-color_weak">deployed</span></p>
+                    <div class="slds-m-top_x-small">
+                        <p class="slds-text-body_small"><strong>{ciUsedInSegments}</strong> referenced in segments</p>
+                        <p class="slds-text-body_small"><strong>{unusedCIs}</strong> deployed but unused</p>
+                    </div>
+                    <template lwc:if={noCIs}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">✗ No Calculated Insights — complex segment logic is not being reused</p>
+                    </template>
+                    <template lwc:if={hasUnusedCIs}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">⚠ {unusedCIs} CI(s) deployed but not referenced in any segment</p>
+                    </template>
+                </div>
+            </div>
+
+            <!-- IR Adoption -->
+            <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
+                <div class="slds-box slds-box_x-small" style="height: 100%;">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name={irIcon} size="x-small" variant={irVariant} class="slds-m-right_x-small"></lightning-icon>
+                        <p class="slds-text-title_caps">IR Adoption</p>
+                    </div>
+                    <p class="slds-text-heading_medium">{irMergeRatio}x <span class="slds-text-body_regular slds-text-color_weak">avg merge ratio</span></p>
+                    <div class="slds-m-top_x-small">
+                        <p class="slds-text-body_small"><strong>{irTotalUnified}</strong> unified profiles</p>
+                        <p class="slds-text-body_small"><strong>{irSummary.totalLinks}</strong> identity links</p>
+                    </div>
+                    <template lwc:if={irNotConfigured}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">✗ IR has not run — no unified profiles found</p>
+                    </template>
+                    <template lwc:if={irLowMerge}>
+                        <p class="slds-text-body_small slds-text-color_error slds-m-top_x-small">⚠ Low merge ratio — match rules may be too restrictive</p>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Recommendations -->
+        <div class="slds-box slds-m-bottom_medium">
+            <p class="slds-text-title_caps slds-m-bottom_small">Recommendations</p>
+            <template for:each={recommendations} for:item="rec">
+                <div key={rec.id} class="slds-grid slds-grid_vertical-align-start slds-m-bottom_small">
+                    <lightning-icon icon-name={rec.icon} size="x-small" variant={rec.variant} class="slds-m-right_small slds-flex-col" style="flex-shrink: 0;"></lightning-icon>
+                    <p class="slds-text-body_regular">{rec.text}</p>
+                </div>
+            </template>
+        </div>
+
+    </template>
+</template>
