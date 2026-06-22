@@ -14,6 +14,8 @@
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "66.0",
   "packageAliases": {
-    "Data Cloud Pulse": "0HogK00000038p3SAA"
+    "Data Cloud Pulse": "0HogK00000038p3SAA",
+    "Data Cloud Pulse@0.1.0-1": "04tgK000000DusPQAS",
+    "Data Cloud Pulse@0.1.0-2": "04tgK000000Duu1QAC"
   }
 }
