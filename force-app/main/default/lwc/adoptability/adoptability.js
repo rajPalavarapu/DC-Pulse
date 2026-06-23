@@ -353,6 +353,34 @@ export default class Adoptability extends LightningElement {
         return 'width: ' + this.cpPhonePercent + '%; height: 8px; border-radius: 4px; background-color: #0176d3;';
     }
 
+    // ── Per-card point scores ──
+    get segmentPoints() { return this.segmentAdoptionStatus === 'healthy' ? 12 : this.segmentAdoptionStatus === 'warning' ? 6 : 0; }
+    get activationPoints() { return this.activationReachStatus === 'healthy' ? 12 : this.activationReachStatus === 'warning' ? 6 : 0; }
+    get cpPoints() { return this.cpStatus === 'healthy' ? 12 : this.cpStatus === 'warning' ? 6 : 0; }
+    get platformPoints() { return this.platformCoverageStatus === 'healthy' ? 10 : this.platformCoverageStatus === 'warning' ? 5 : 0; }
+    get dmoPoints() { return this.dmoCoverageStatus === 'healthy' ? 10 : this.dmoCoverageStatus === 'warning' ? 5 : 0; }
+    get transformPoints() { return this.transformStatus === 'healthy' ? 10 : this.transformStatus === 'warning' ? 5 : 0; }
+    get streamPoints() { return this.streamStatus === 'healthy' ? 10 : this.streamStatus === 'warning' ? 5 : 0; }
+    get ciPoints() { return this.ciStatus === 'healthy' ? 8 : this.ciStatus === 'warning' ? 4 : 0; }
+    get irPoints() { return this.irStatus === 'healthy' ? 8 : this.irStatus === 'warning' ? 4 : 0; }
+    get freshnessPoints() { return this.freshnessStatus === 'healthy' ? 8 : this.freshnessStatus === 'warning' ? 4 : 0; }
+
+    get segmentPointsStyle() { return this._badgeStyle(this.segmentAdoptionStatus); }
+    get activationPointsStyle() { return this._badgeStyle(this.activationReachStatus); }
+    get cpPointsStyle() { return this._badgeStyle(this.cpStatus); }
+    get platformPointsStyle() { return this._badgeStyle(this.platformCoverageStatus); }
+    get dmoPointsStyle() { return this._badgeStyle(this.dmoCoverageStatus); }
+    get transformPointsStyle() { return this._badgeStyle(this.transformStatus); }
+    get streamPointsStyle() { return this._badgeStyle(this.streamStatus); }
+    get ciPointsStyle() { return this._badgeStyle(this.ciStatus); }
+    get irPointsStyle() { return this._badgeStyle(this.irStatus); }
+    get freshnessPointsStyle() { return this._badgeStyle(this.freshnessStatus); }
+
+    _badgeStyle(status) {
+        const color = status === 'healthy' ? '#2e844a' : status === 'warning' ? '#fe9339' : '#c23934';
+        return 'display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;color:#fff;background-color:' + color + ';white-space:nowrap;';
+    }
+
     get noPlatforms() { return this.totalPlatforms === 0; }
     get noCIs() { return this.totalCIs === 0; }
     get hasUnusedCIs() { return !this.noCIs && this.unusedCIs > 0; }

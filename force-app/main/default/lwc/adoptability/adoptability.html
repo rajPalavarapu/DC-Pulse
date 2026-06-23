@@ -35,6 +35,95 @@
             <div style="background-color: #dddbda; border-radius: 4px; height: 12px; width: 100%;">
                 <div style={maturityBarStyle}></div>
             </div>
+
+            <!-- Score Breakdown Table -->
+            <div class="slds-m-top_medium">
+                <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">How this score is calculated — each dimension contributes points based on its health status:</p>
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" style="font-size: 12px;">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th scope="col"><div class="slds-truncate">Dimension</div></th>
+                            <th scope="col" class="slds-text-align_center"><div class="slds-truncate">✓ Healthy</div></th>
+                            <th scope="col" class="slds-text-align_center"><div class="slds-truncate">⚠ Warning</div></th>
+                            <th scope="col" class="slds-text-align_center"><div class="slds-truncate">✗ Error</div></th>
+                            <th scope="col" class="slds-text-align_center"><div class="slds-truncate">Max</div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Segment Adoption</td>
+                            <td class="slds-text-align_center">12</td>
+                            <td class="slds-text-align_center">6</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>12</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Activation Reach</td>
+                            <td class="slds-text-align_center">12</td>
+                            <td class="slds-text-align_center">6</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>12</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Contact Point Coverage</td>
+                            <td class="slds-text-align_center">12</td>
+                            <td class="slds-text-align_center">6</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>12</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Platform Coverage</td>
+                            <td class="slds-text-align_center">10</td>
+                            <td class="slds-text-align_center">5</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>10</strong></td>
+                        </tr>
+                        <tr>
+                            <td>DMO Coverage</td>
+                            <td class="slds-text-align_center">10</td>
+                            <td class="slds-text-align_center">5</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>10</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Data Transform Health</td>
+                            <td class="slds-text-align_center">10</td>
+                            <td class="slds-text-align_center">5</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>10</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Data Stream Freshness</td>
+                            <td class="slds-text-align_center">10</td>
+                            <td class="slds-text-align_center">5</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>10</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Calculated Insights</td>
+                            <td class="slds-text-align_center">8</td>
+                            <td class="slds-text-align_center">4</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>8</strong></td>
+                        </tr>
+                        <tr>
+                            <td>IR Adoption</td>
+                            <td class="slds-text-align_center">8</td>
+                            <td class="slds-text-align_center">4</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>8</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Segment Freshness</td>
+                            <td class="slds-text-align_center">8</td>
+                            <td class="slds-text-align_center">4</td>
+                            <td class="slds-text-align_center">0</td>
+                            <td class="slds-text-align_center"><strong>8</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">The maturity phase (Ingestion / Unification / Activation / Optimization) is determined separately based on milestones — IR has run, activations exist, and contact point coverage is above 60%.</p>
+            </div>
         </div>
 
         <!-- Cards Row 1 -->
@@ -45,7 +134,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={segmentAdoptionIcon} size="x-small" variant={segmentAdoptionVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">Segment Adoption</p>
+                        <p class="slds-text-title_caps slds-grow">Segment Adoption</p>
+                        <span style={segmentPointsStyle}>{segmentPoints} / 12 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{totalSegments} <span class="slds-text-body_regular slds-text-color_weak">total</span></p>
                     <div class="slds-m-top_x-small">
@@ -64,7 +154,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={activationReachIcon} size="x-small" variant={activationReachVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">Activation Reach</p>
+                        <p class="slds-text-title_caps slds-grow">Activation Reach</p>
+                        <span style={activationPointsStyle}>{activationPoints} / 12 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{activationReachPercent}% <span class="slds-text-body_regular slds-text-color_weak">activated</span></p>
                     <div class="slds-m-top_x-small">
@@ -82,7 +173,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={platformCoverageIcon} size="x-small" variant={platformCoverageVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">Platform Coverage</p>
+                        <p class="slds-text-title_caps slds-grow">Platform Coverage</p>
+                        <span style={platformPointsStyle}>{platformPoints} / 10 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{totalPlatforms} <span class="slds-text-body_regular slds-text-color_weak">platform(s) connected</span></p>
                     <div class="slds-m-top_x-small">
@@ -106,7 +198,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={dmoCoverageIcon} size="x-small" variant={dmoCoverageVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">DMO Coverage</p>
+                        <p class="slds-text-title_caps slds-grow">DMO Coverage</p>
+                        <span style={dmoPointsStyle}>{dmoPoints} / 10 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{populatedDmoCount} / {totalDmoCount} <span class="slds-text-body_regular slds-text-color_weak">populated</span></p>
                     <div class="slds-m-top_x-small">
@@ -128,7 +221,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={cpIcon} size="x-small" variant={cpVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">Contact Point Activatability</p>
+                        <p class="slds-text-title_caps slds-grow">Contact Point Activatability</p>
+                        <span style={cpPointsStyle}>{cpPoints} / 12 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{cpTotal} <span class="slds-text-body_regular slds-text-color_weak">unified profiles</span></p>
                     <div class="slds-m-top_x-small">
@@ -151,7 +245,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={freshnessIcon} size="x-small" variant={freshnessVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">Segment Freshness</p>
+                        <p class="slds-text-title_caps slds-grow">Segment Freshness</p>
+                        <span style={freshnessPointsStyle}>{freshnessPoints} / 8 pts</span>
                     </div>
                     <div class="slds-m-top_x-small">
                         <p class="slds-text-body_small"><strong>{freshSegments.length}</strong> updated within 30 days</p>
@@ -174,7 +269,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={transformIcon} size="x-small" variant={transformVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">Data Transform Health</p>
+                        <p class="slds-text-title_caps slds-grow">Data Transform Health</p>
+                        <span style={transformPointsStyle}>{transformPoints} / 10 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{totalTransforms} <span class="slds-text-body_regular slds-text-color_weak">transform(s) configured</span></p>
                     <template lwc:if={noTransforms}>
@@ -203,7 +299,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={streamIcon} size="x-small" variant={streamVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">Data Stream Freshness</p>
+                        <p class="slds-text-title_caps slds-grow">Data Stream Freshness</p>
+                        <span style={streamPointsStyle}>{streamPoints} / 10 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{totalStreams} <span class="slds-text-body_regular slds-text-color_weak">stream(s) configured</span></p>
                     <template lwc:if={noStreams}>
@@ -236,7 +333,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={ciIcon} size="x-small" variant={ciVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">Calculated Insights</p>
+                        <p class="slds-text-title_caps slds-grow">Calculated Insights</p>
+                        <span style={ciPointsStyle}>{ciPoints} / 8 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{totalCIs} <span class="slds-text-body_regular slds-text-color_weak">deployed</span></p>
                     <div class="slds-m-top_x-small">
@@ -257,7 +355,8 @@
                 <div class="slds-box slds-box_x-small" style="height: 100%;">
                     <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
                         <lightning-icon icon-name={irIcon} size="x-small" variant={irVariant} class="slds-m-right_x-small"></lightning-icon>
-                        <p class="slds-text-title_caps">IR Adoption</p>
+                        <p class="slds-text-title_caps slds-grow">IR Adoption</p>
+                        <span style={irPointsStyle}>{irPoints} / 8 pts</span>
                     </div>
                     <p class="slds-text-heading_medium">{irMergeRatio}x <span class="slds-text-body_regular slds-text-color_weak">avg merge ratio</span></p>
                     <div class="slds-m-top_x-small">
