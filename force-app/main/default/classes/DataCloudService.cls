@@ -37,6 +37,7 @@ public with sharing class DataCloudService {
         req.setMethod('GET');
         req.setHeader('Content-Type', 'application/json');
         req.setHeader('Authorization', 'Bearer ' + token);
+        req.setTimeout(120000);
         return new Http().send(req);
     }
 
@@ -48,6 +49,7 @@ public with sharing class DataCloudService {
         req.setHeader('Content-Type', 'application/json');
         req.setHeader('Authorization', 'Bearer ' + token);
         req.setBody(body);
+        req.setTimeout(120000);
         return new Http().send(req);
     }
 
@@ -280,11 +282,15 @@ public with sharing class DataCloudService {
         };
         Map<String, Integer> coverage = new Map<String, Integer>();
         for (String dmo : dmos) {
-            HttpResponse res = makePostRequest(
-                '/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default',
-                '{"sql":"SELECT COUNT() FROM ' + dmo + '"}'
-            );
-            coverage.put(dmo, extractCount(res));
+            try {
+                HttpResponse res = makePostRequest(
+                    '/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default',
+                    '{"sql":"SELECT COUNT() FROM ' + dmo + '"}'
+                );
+                coverage.put(dmo, extractCount(res));
+            } catch (Exception e) {
+                coverage.put(dmo, 0);
+            }
         }
         return coverage;
     }
@@ -303,18 +309,27 @@ public with sharing class DataCloudService {
 
     public static Map<String, Integer> getOrgContactPointCoverage() {
         Map<String, Integer> results = new Map<String, Integer>();
-        String totalSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm';
-        String emailSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm ui ' +
-            'LEFT JOIN IndividualIdentityLink__dlm lnk ON ui.ssot__Id__c = lnk.UnifiedRecordId__c ' +
-            'LEFT JOIN ssot__ContactPointEmail__dlm cpe ON lnk.SourceRecordId__c = cpe.ssot__PartyId__c ' +
-            'WHERE cpe.ssot__Id__c IS NOT NULL';
-        String phoneSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm ui ' +
-            'LEFT JOIN IndividualIdentityLink__dlm lnk ON ui.ssot__Id__c = lnk.UnifiedRecordId__c ' +
-            'LEFT JOIN ssot__ContactPointPhone__dlm cpp ON lnk.SourceRecordId__c = cpp.ssot__PartyId__c ' +
-            'WHERE cpp.ssot__Id__c IS NOT NULL';
-        results.put('total', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + totalSql.escapeJava() + '"}')));
-        results.put('withEmail', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + emailSql.escapeJava() + '"}')));
-        results.put('withPhone', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + phoneSql.escapeJava() + '"}')));
+        results.put('total', 0);
+        results.put('withEmail', 0);
+        results.put('withPhone', 0);
+        try {
+            String totalSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm';
+            results.put('total', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + totalSql.escapeJava() + '"}')));
+        } catch (Exception e) {}
+        try {
+            String emailSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm ui ' +
+                'LEFT JOIN IndividualIdentityLink__dlm lnk ON ui.ssot__Id__c = lnk.UnifiedRecordId__c ' +
+                'LEFT JOIN ssot__ContactPointEmail__dlm cpe ON lnk.SourceRecordId__c = cpe.ssot__PartyId__c ' +
+                'WHERE cpe.ssot__Id__c IS NOT NULL';
+            results.put('withEmail', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + emailSql.escapeJava() + '"}')));
+        } catch (Exception e) {}
+        try {
+            String phoneSql = 'SELECT COUNT() FROM UnifiedIndividual__dlm ui ' +
+                'LEFT JOIN IndividualIdentityLink__dlm lnk ON ui.ssot__Id__c = lnk.UnifiedRecordId__c ' +
+                'LEFT JOIN ssot__ContactPointPhone__dlm cpp ON lnk.SourceRecordId__c = cpp.ssot__PartyId__c ' +
+                'WHERE cpp.ssot__Id__c IS NOT NULL';
+            results.put('withPhone', extractCount(makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql":"' + phoneSql.escapeJava() + '"}')));
+        } catch (Exception e) {}
         return results;
     }
 }
