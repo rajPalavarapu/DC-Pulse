@@ -207,4 +207,153 @@ private class DataCloudServiceTest {
         }
         Test.stopTest();
     }
+
+    @isTest
+    static void testGetActivations() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudService.getActivations();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.contains('act1'));
+    }
+
+    @isTest
+    static void testGetActivationsApiError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudService.getActivations();
+            System.assert(false, 'Expected exception not thrown');
+        } catch (CalloutException e) {
+            System.assert(e.getMessage().contains('Failed to get activations'));
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetCalculatedInsights() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudService.getCalculatedInsights();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.contains('TestCI'));
+    }
+
+    @isTest
+    static void testGetCalculatedInsightsApiError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudService.getCalculatedInsights();
+            System.assert(false, 'Expected exception not thrown');
+        } catch (CalloutException e) {
+            System.assert(e.getMessage().contains('Failed to get calculated insights'));
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetActivationPlatforms() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudService.getActivationPlatforms();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.contains('Marketing Cloud'));
+    }
+
+    @isTest
+    static void testGetActivationPlatformsApiError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudService.getActivationPlatforms();
+            System.assert(false, 'Expected exception not thrown');
+        } catch (CalloutException e) {
+            System.assert(e.getMessage().contains('Failed to get activation platforms'));
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetDmoCoverage() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        Map<String, Integer> result = DataCloudService.getDmoCoverage();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.size() > 0);
+    }
+
+    @isTest
+    static void testGetOrgContactPointCoverage() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        Map<String, Integer> result = DataCloudService.getOrgContactPointCoverage();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.containsKey('total'));
+        System.assert(result.containsKey('withEmail'));
+        System.assert(result.containsKey('withPhone'));
+    }
+
+    @isTest
+    static void testGetDataTransforms() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudService.getDataTransforms();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.contains('TestTransform'));
+    }
+
+    @isTest
+    static void testGetDataTransformsApiError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudService.getDataTransforms();
+            System.assert(false, 'Expected exception not thrown');
+        } catch (CalloutException e) {
+            System.assert(e.getMessage().contains('Failed to get data transforms'));
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetDataStreams() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudService.getDataStreams();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.contains('TestStream'));
+    }
+
+    @isTest
+    static void testGetDataStreamsApiError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudService.getDataStreams();
+            System.assert(false, 'Expected exception not thrown');
+        } catch (CalloutException e) {
+            System.assert(e.getMessage().contains('Failed to get data streams'));
+        }
+        Test.stopTest();
+    }
 }
