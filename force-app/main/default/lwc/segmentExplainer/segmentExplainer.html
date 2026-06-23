@@ -207,6 +207,8 @@
                                 <p class="slds-text-title_caps slds-m-bottom_x-small">Activation Readiness</p>
                                 <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_medium">Based on latest published snapshot. Shows how many profiles will reach the destination per channel.</p>
 
+                                <template lwc:if={isIndividualBased}>
+
                                 <template lwc:if={isLoadingReadiness}>
                                     <div class="slds-align_absolute-center slds-p-around_medium">
                                         <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
@@ -316,6 +318,14 @@
 
                                 <template lwc:if={noMembershipTable}>
                                     <p class="slds-text-color_weak">Segment has not been published. Publish the segment to view activation readiness metrics.</p>
+                                </template>
+
+                                </template>
+                                <template lwc:else>
+                                    <div class="slds-notify slds-notify_alert slds-theme_info" role="alert">
+                                        <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                        <strong>Not available for {unsupportedDmoLabel} segments.</strong> Activation readiness metrics currently support Individual and Unified Individual segments only.
+                                    </div>
                                 </template>
 
                             </div>
