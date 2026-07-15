@@ -209,6 +209,18 @@ export default class SegmentExplainer extends LightningElement {
         return this.phoneDropCount > 0;
     }
 
+    get isIndividualBased() {
+        const dmo = this.selectedSegmentData && this.selectedSegmentData.segmentOnApiName;
+        if (!dmo) return false;
+        return dmo.includes('Individual__dlm') || dmo.includes('UnifiedIndividual__dlm');
+    }
+
+    get unsupportedDmoLabel() {
+        const dmo = this.selectedSegmentData && this.selectedSegmentData.segmentOnApiName;
+        if (!dmo) return '';
+        return dmo.replace('ssot__', '').replace('__dlm', '');
+    }
+
     get hasMembershipTable() {
         return this.selectedSegmentData &&
             this.selectedSegmentData.segmentMembershipDmo &&
@@ -333,7 +345,7 @@ export default class SegmentExplainer extends LightningElement {
             .then(result => {
                 const parsed = JSON.parse(result);
                 this.selectedSegmentData = parsed.segments[0];
-                if (this.hasMembershipTable) {
+                if (this.hasMembershipTable && this.isIndividualBased) {
                     this.loadActivationReadiness(this.selectedSegmentData.segmentMembershipDmo.latestTable);
                 }
             })

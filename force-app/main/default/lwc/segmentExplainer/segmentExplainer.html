@@ -132,9 +132,6 @@
                                     <lightning-layout-item size="6" padding="around-small">
                                         <p><strong>Last Modified:</strong> {lastModifiedFormatted}</p>
                                     </lightning-layout-item>
-                                    <lightning-layout-item size="6" padding="around-small">
-                                        <p><strong>Lookback Period:</strong> {selectedSegmentData.lookbackPeriod}</p>
-                                    </lightning-layout-item>
                                 </lightning-layout>
                             </div>
 
@@ -176,14 +173,6 @@
                                         <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_small" role="alert">
                                             <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
                                             <strong>Warning: {filterCountLabel}</strong> — Approaching the 50-filter limit. Consider consolidating filters or removing unused criteria groups.
-                                        </div>
-                                    </template>
-
-                                    <!-- Lookback Warning -->
-                                    <template lwc:if={hasNoLookback}>
-                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_small" role="alert">
-                                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                            <strong>No Lookback Period set.</strong> Without a lookback period, this segment evaluates all historical data rather than a rolling time window. This can significantly inflate segment size and slow refresh times.
                                         </div>
                                     </template>
 
