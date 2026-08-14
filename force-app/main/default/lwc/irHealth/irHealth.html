@@ -39,9 +39,9 @@
 
                     <div class="slds-col slds-size_1-of-3">
                         <div class="slds-box slds-theme_shade slds-text-align_center">
-                            <p class="slds-text-title_caps slds-m-bottom_x-small">Avg Merges / Profile</p>
+                            <p class="slds-text-title_caps slds-m-bottom_x-small">Avg Links / Profile</p>
                             <p class="slds-text-heading_large">{irSummary.avgLinksPerProfile}</p>
-                            <p class="slds-text-color_weak slds-text-body_small">Source records per unified profile</p>
+                            <p class="slds-text-color_weak slds-text-body_small">Source records linked per unified profile</p>
                         </div>
                     </div>
 
@@ -49,18 +49,18 @@
             </div>
         </template>
 
-        <!-- ── SECTION 2: Suspicious Merge Detector ── -->
+        <!-- ── SECTION 2: Suspicious Link Detector ── -->
         <div class="slds-box slds-m-bottom_medium">
-            <p class="slds-text-title_caps slds-m-bottom_x-small">Suspicious Merge Detector</p>
+            <p class="slds-text-title_caps slds-m-bottom_x-small">Suspicious Link Detector</p>
             <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small">
-                Profiles with {suspiciousThreshold} or more source records merged. High merge counts often indicate placeholder emails, generic phone numbers, or over-broad match rules.
+                Unified profiles with {suspiciousThreshold} or more source records linked. High link counts often indicate placeholder emails, generic phone numbers, or over-broad match rules.
             </p>
 
             <div class="slds-grid slds-gutters slds-m-bottom_small">
                 <div class="slds-col slds-size_3-of-12">
                     <lightning-input
                         type="number"
-                        label="Merge count threshold"
+                        label="Link count threshold"
                         value={suspiciousThresholdInput}
                         min="2"
                         step="1"
@@ -85,7 +85,7 @@
             <template lwc:if={hasSuspiciousMerges}>
                 <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_small" role="alert">
                     <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                    <strong>{suspiciousMerges.length} profile(s) have {suspiciousThreshold} or more source records merged.</strong> Click a row to inspect the source records.
+                    <strong>{suspiciousMerges.length} profile(s) have {suspiciousThreshold} or more source records linked.</strong> Click a row to inspect the linked source records.
                     <lightning-button-icon
                         icon-name={suspiciousToggleIcon}
                         alternative-text={suspiciousToggleLabel}
@@ -108,20 +108,18 @@
             <template lwc:if={noSuspiciousMerges}>
                 <div class="slds-notify slds-notify_alert slds-theme_success" role="alert">
                     <lightning-icon icon-name="utility:check" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                    No profiles with {suspiciousThreshold} or more source records merged. IR rules look healthy.
+                    No profiles with {suspiciousThreshold} or more source records linked. IR rules look healthy.
                 </div>
             </template>
 
         </div>
 
-        <!-- ── SECTION 3: Profile Lookup ── -->
+        <!-- ── SECTION 3: Unified Profile Lookup ── -->
         <div class="slds-box slds-m-bottom_medium">
             <p class="slds-text-title_caps slds-m-bottom_x-small">Unified Profile Lookup</p>
-            <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small">Search by first or last name to inspect how a profile was merged.</p>
+            <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small">Search by first or last name to inspect which source records are linked to a unified profile.</p>
 
             <template lwc:if={selectedProfile}>
-
-                <!-- Drill-down view -->
                 <div>
                     <div class="slds-grid slds-gutters slds-m-bottom_small slds-align_absolute-center">
                         <div class="slds-col">
@@ -144,20 +142,19 @@
                     </template>
 
                     <template lwc:if={mergeDetail}>
-                        <p class="slds-text-title_caps slds-m-bottom_x-small">Merged Source Records ({mergeCount})</p>
+                        <p class="slds-text-title_caps slds-m-bottom_x-small">Linked Source Records ({mergeCount})</p>
 
                         <template lwc:if={isMergeCountHigh}>
                             <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_small" role="alert">
                                 <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                <strong>{mergeCount} source records merged into this profile.</strong> Review the data sources below — a placeholder email or generic phone number may be causing over-merging.
+                                <strong>{mergeCount} source records linked to this unified profile.</strong> Review the data sources below — a placeholder email or generic phone number may be causing over-linking.
                             </div>
                         </template>
 
-                        <!-- Hub and Spoke Chart -->
                         <template lwc:if={hasMergeChart}>
                             <div class="slds-box slds-m-bottom_medium" style="overflow-x:auto; overflow-y:hidden; background:#fafafa; border-radius:8px;">
-                                <p class="slds-text-title_caps slds-m-bottom_x-small slds-p-top_small slds-p-left_small">Merge Graph</p>
-                                <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small slds-p-left_small">Unified profile at center — source records radiating outward</p>
+                                <p class="slds-text-title_caps slds-m-bottom_x-small slds-p-top_small slds-p-left_small">Link Graph</p>
+                                <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small slds-p-left_small">Unified profile at center — linked source records radiating outward</p>
                                 <template lwc:if={mergeChartCapped}>
                                     <div class="slds-notify slds-notify_alert slds-theme_info slds-m-horizontal_small slds-m-bottom_small" role="alert" style="border-radius:4px;">
                                         <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
@@ -165,45 +162,33 @@
                                     </div>
                                 </template>
                                 <svg viewBox={mergeChart.viewBox} style={mergeChart.svgStyle} xmlns="http://www.w3.org/2000/svg">
-
-                                    <!-- Spoke lines -->
                                     <template for:each={mergeChart.nodes} for:item="node">
                                         <line key={node.spokeKey}
                                             x1={mergeChart.cx} y1={mergeChart.cy}
                                             x2={node.nx} y2={node.ny}
                                             stroke="#c9d9e8" stroke-width="1.5"/>
                                     </template>
-
-                                    <!-- Center node -->
                                     <circle cx={mergeChart.cx} cy={mergeChart.cy} r={mergeChart.centerR} fill="#0176d3"/>
                                     <text x={mergeChart.cx} y={mergeChart.centerY1} text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Arial, sans-serif">Unified</text>
                                     <text x={mergeChart.cx} y={mergeChart.centerY2} text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Arial, sans-serif">Profile</text>
                                     <text x={mergeChart.cx} y={mergeChart.centerY3} text-anchor="middle" fill="#cce5ff" font-size="10" font-family="Arial, sans-serif">{selectedProfileName}</text>
-
-                                    <!-- Numbered nodes + outside labels -->
                                     <template for:each={mergeChart.nodes} for:item="node">
                                         <g key={node.nodeKey}>
-                                            <!-- Numbered circle -->
                                             <circle cx={node.nx} cy={node.ny} r="22" fill="#f4f6f9" stroke="#0176d3" stroke-width="2"/>
                                             <text x={node.nx} y={node.ny} dy="5" text-anchor="middle"
                                                 fill="#0176d3" font-size="13" font-weight="700" font-family="Arial, sans-serif">{node.index}</text>
-                                            <!-- Data Source — grey -->
                                             <text x={node.lx} y={node.ly1} text-anchor={node.anchor}
                                                 fill="#706e6b" font-size="11" font-family="Arial, sans-serif">{node.dsLabel}</text>
-                                            <!-- Data Source Object — bold blue -->
                                             <text x={node.lx} y={node.ly2} text-anchor={node.anchor}
                                                 fill="#0176d3" font-size="12" font-weight="700" font-family="Arial, sans-serif">{node.dsoLabel}</text>
-                                            <!-- Source Record ID — light grey -->
                                             <text x={node.lx} y={node.ly3} text-anchor={node.anchor}
                                                 fill="#a8a8a8" font-size="10" font-family="Arial, sans-serif">{node.srcShort}</text>
                                         </g>
                                     </template>
-
                                 </svg>
                             </div>
                         </template>
 
-                        <!-- Detail Table -->
                         <lightning-datatable
                             key-field="sourceRecordId"
                             data={mergeDetail}
@@ -212,12 +197,9 @@
                         </lightning-datatable>
                     </template>
                 </div>
-
             </template>
 
             <template lwc:else>
-
-                <!-- Search input -->
                 <div class="slds-grid slds-gutters slds-m-bottom_small">
                     <div class="slds-col slds-size_10-of-12">
                         <lightning-input
@@ -245,7 +227,7 @@
                 </template>
 
                 <template lwc:if={hasSearchResults}>
-                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">Click a row to view merged source records.</p>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">Click a row to view linked source records.</p>
                     <lightning-datatable
                         key-field="unifiedId"
                         data={searchResults}
@@ -258,7 +240,6 @@
                 <template lwc:if={noSearchResults}>
                     <p class="slds-text-color_weak slds-text-body_small">No profiles found matching "{searchTerm}".</p>
                 </template>
-
             </template>
         </div>
 

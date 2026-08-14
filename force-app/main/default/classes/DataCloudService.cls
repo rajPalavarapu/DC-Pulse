@@ -9,7 +9,7 @@ public with sharing class DataCloudService {
     private static String getAccessToken() {
         DC_Lens_Config__c config = DC_Lens_Config__c.getInstance();
         if (config == null || config.Consumer_Key__c == null || config.Consumer_Secret__c == null) {
-            throw new CalloutException('DC Pulse Config custom setting is missing Consumer Key or Secret.');
+            throw new CalloutException('Data Cloud Insights Config custom setting is missing Consumer Key or Secret.');
         }
 
         HttpRequest req = new HttpRequest();
@@ -61,6 +61,96 @@ public with sharing class DataCloudService {
         throw new CalloutException('Failed to get segments: ' + res.getStatus() + ' ' + res.getBody());
     }
 
+    public static List<Map<String, Object>> getSegmentsByCategory(String category) {
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=2000');
+        List<Map<String, Object>> results = new List<Map<String, Object>>();
+        if (res.getStatusCode() != 200) return results;
+        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+        List<Object> segments = (List<Object>) body.get('segments');
+        if (segments == null) return results;
+        for (Object seg : segments) {
+            Map<String, Object> s = (Map<String, Object>) seg;
+            Integer memberCount = s.get('lastSegmentMemberCount') != null
+                ? Integer.valueOf(String.valueOf(s.get('lastSegmentMemberCount'))) : 0;
+            String status   = (String) s.get('segmentStatus');
+            String interval = (String) s.get('publishInterval');
+            Boolean match = false;
+            if (category == 'zero'     && memberCount == 0) match = true;
+            if (category == 'inactive' && 'INACTIVE'.equals(status)) match = true;
+            if (category == 'manual'   && 'NO_REFRESH'.equals(interval)) match = true;
+            if (match) {
+                results.add(new Map<String, Object>{
+                    'displayName'           => s.get('displayName'),
+                    'apiName'               => s.get('apiName'),
+                    'segmentStatus'         => status,
+                    'lastSegmentMemberCount'=> memberCount,
+                    'publishInterval'       => interval
+                });
+            }
+        }
+        return results;
+    }
+
+    public static Map<String, Object> getSegmentHealthSummary() {
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=500');
+        Map<String, Object> summary = new Map<String, Object>{
+            'totalCount' => 0, 'zeroPopulationCount' => 0,
+            'inactiveCount' => 0, 'manualRefreshCount' => 0,
+            'zeroPopulationNames' => new List<String>(),
+            'inactiveNames' => new List<String>(),
+            'manualRefreshNames' => new List<String>()
+        };
+        if (res.getStatusCode() != 200) return summary;
+        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+        List<Object> segments = (List<Object>) body.get('segments');
+        if (segments == null) return summary;
+        Integer zeroCount = 0, inactiveCount = 0, manualCount = 0;
+        List<String> zeroNames = new List<String>(), inactiveNames = new List<String>(), manualNames = new List<String>();
+        for (Object seg : segments) {
+            Map<String, Object> s = (Map<String, Object>) seg;
+            String displayName = (String) s.get('displayName');
+            Integer memberCount = s.get('lastSegmentMemberCount') != null
+                ? Integer.valueOf(String.valueOf(s.get('lastSegmentMemberCount'))) : 0;
+            String status = (String) s.get('segmentStatus');
+            String interval = (String) s.get('publishInterval');
+            if (memberCount == 0) { zeroCount++; if (zeroNames.size() < 5) zeroNames.add(displayName); }
+            if ('INACTIVE'.equals(status)) { inactiveCount++; if (inactiveNames.size() < 5) inactiveNames.add(displayName); }
+            if ('NO_REFRESH'.equals(interval)) { manualCount++; if (manualNames.size() < 5) manualNames.add(displayName); }
+        }
+        summary.put('totalCount', segments.size());
+        summary.put('zeroPopulationCount', zeroCount);
+        summary.put('inactiveCount', inactiveCount);
+        summary.put('manualRefreshCount', manualCount);
+        summary.put('zeroPopulationNames', zeroNames);
+        summary.put('inactiveNames', inactiveNames);
+        summary.put('manualRefreshNames', manualNames);
+        return summary;
+    }
+
+    public static List<Map<String, Object>> searchSegments(String searchTerm) {
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=200');
+        List<Map<String, Object>> results = new List<Map<String, Object>>();
+        if (res.getStatusCode() != 200) return results;
+        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+        List<Object> segments = (List<Object>) body.get('segments');
+        if (segments == null) return results;
+        String lowerSearch = searchTerm.toLowerCase();
+        for (Object seg : segments) {
+            Map<String, Object> s = (Map<String, Object>) seg;
+            String displayName = (String) s.get('displayName');
+            if (displayName != null && displayName.toLowerCase().contains(lowerSearch)) {
+                results.add(new Map<String, Object>{
+                    'apiName' => s.get('apiName'),
+                    'displayName' => displayName,
+                    'segmentStatus' => s.get('segmentStatus'),
+                    'lastSegmentMemberCount' => s.get('lastSegmentMemberCount')
+                });
+                if (results.size() >= 20) break;
+            }
+        }
+        return results;
+    }
+
     public static String getSegmentDetails(String segmentApiName) {
         HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments/' + segmentApiName);
         if (res.getStatusCode() == 200) {
@@ -69,20 +159,50 @@ public with sharing class DataCloudService {
         throw new CalloutException('Failed to get segment details: ' + res.getStatus() + ' ' + res.getBody());
     }
 
-    public static Map<String, Integer> getActivationReadiness(String membershipTable, String segmentOnApiName) {
+    public static Map<String, Integer> getActivationReadiness(String membershipTable, String segmentOnApiName, String marketSegmentId) {
         Map<String, Integer> results = new Map<String, Integer>();
 
-        String totalSql = 'SELECT COUNT() FROM ' + membershipTable;
+        // Membership tables are shared across all segments and accumulate rows across every publish run.
+        // Segment_Id__c stores the 15-char Salesforce ID; marketSegmentId from the API is 18 chars — truncate to match.
+        String segId15 = (marketSegmentId != null && marketSegmentId.length() >= 15)
+            ? marketSegmentId.left(15) : (marketSegmentId != null ? marketSegmentId : '');
+        String safeSegId = segId15.replace('\'', '\'\'');
+
+        String latestTs = null;
+        HttpResponse maxTsRes = makePostRequest(
+            '/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default',
+            '{"sql": "SELECT MAX(Timestamp__c) AS maxTs FROM ' + membershipTable + ' WHERE Segment_Id__c = \'' + safeSegId + '\'"}'
+        );
+        if (maxTsRes.getStatusCode() == 200 || maxTsRes.getStatusCode() == 201) {
+            Map<String, Object> tsBody = (Map<String, Object>) JSON.deserializeUntyped(maxTsRes.getBody());
+            List<Object> tsRows = (List<Object>) tsBody.get('data');
+            if (tsRows != null && !tsRows.isEmpty()) {
+                List<Object> firstRow = (List<Object>) tsRows[0];
+                if (firstRow != null && !firstRow.isEmpty() && firstRow[0] != null) {
+                    latestTs = String.valueOf(firstRow[0]);
+                }
+            }
+        }
+
+        String safeTs = latestTs != null ? latestTs.replace('\'', '\'\'') : '';
+        String baseFilter = ' WHERE Segment_Id__c = \'' + safeSegId + '\''
+            + (latestTs != null ? ' AND Timestamp__c = \'' + safeTs + '\'' : '')
+            + ' AND Delta_Type__c <> \'removed\'';
+        String joinFilter = ' AND mem.Segment_Id__c = \'' + safeSegId + '\''
+            + (latestTs != null ? ' AND mem.Timestamp__c = \'' + safeTs + '\'' : '')
+            + ' AND mem.Delta_Type__c <> \'removed\'';
+
+        String totalSql = 'SELECT COUNT() FROM ' + membershipTable + baseFilter;
 
         String emailSql = 'SELECT COUNT() AS cnt FROM ' + membershipTable + ' mem ' +
             'LEFT JOIN IndividualIdentityLink__dlm lnk ON mem.Id__c = lnk.UnifiedRecordId__c ' +
             'LEFT JOIN ssot__ContactPointEmail__dlm cpe ON lnk.SourceRecordId__c = cpe.ssot__PartyId__c ' +
-            'WHERE cpe.ssot__Id__c IS NOT NULL';
+            'WHERE cpe.ssot__Id__c IS NOT NULL' + joinFilter;
 
         String phoneSql = 'SELECT COUNT() AS cnt FROM ' + membershipTable + ' mem ' +
             'LEFT JOIN IndividualIdentityLink__dlm lnk ON mem.Id__c = lnk.UnifiedRecordId__c ' +
             'LEFT JOIN ssot__ContactPointPhone__dlm cpp ON lnk.SourceRecordId__c = cpp.ssot__PartyId__c ' +
-            'WHERE cpp.ssot__Id__c IS NOT NULL';
+            'WHERE cpp.ssot__Id__c IS NOT NULL' + joinFilter;
 
         HttpResponse totalRes = makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql": "' + totalSql.escapeJava() + '"}');
         HttpResponse emailRes = makePostRequest('/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default', '{"sql": "' + emailSql.escapeJava() + '"}');
@@ -198,6 +318,42 @@ public with sharing class DataCloudService {
             }
         }
         return merges;
+    }
+
+    public static List<Map<String, Object>> getProfileExplorer(String searchTerm) {
+        String safe = searchTerm != null ? searchTerm.replace('\'', '\'\'') : '';
+        String whereClause = (safe.length() >= 2)
+            ? ' WHERE ui.ssot__FirstName__c LIKE \'%' + safe + '%\' OR ui.ssot__LastName__c LIKE \'%' + safe + '%\''
+            : '';
+        String sql = 'SELECT ui.ssot__Id__c, ui.ssot__FirstName__c, ui.ssot__LastName__c, COUNT(lnk.SourceRecordId__c) AS sourceProfiles '
+            + 'FROM UnifiedIndividual__dlm ui '
+            + 'LEFT JOIN IndividualIdentityLink__dlm lnk ON ui.ssot__Id__c = lnk.UnifiedRecordId__c '
+            + whereClause
+            + ' GROUP BY ui.ssot__Id__c, ui.ssot__FirstName__c, ui.ssot__LastName__c '
+            + 'ORDER BY COUNT(lnk.SourceRecordId__c) DESC '
+            + 'LIMIT 50';
+        HttpResponse res = makePostRequest(
+            '/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default',
+            '{"sql": "' + sql.escapeJava() + '"}'
+        );
+        List<Map<String, Object>> profiles = new List<Map<String, Object>>();
+        Integer statusCode = res.getStatusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+            List<Object> rows = (List<Object>) body.get('data');
+            if (rows != null) {
+                for (Object row : rows) {
+                    List<Object> cols = (List<Object>) row;
+                    Map<String, Object> profile = new Map<String, Object>();
+                    profile.put('unifiedId',      cols[0] != null ? String.valueOf(cols[0]) : '');
+                    profile.put('firstName',       cols[1] != null ? String.valueOf(cols[1]) : '');
+                    profile.put('lastName',        cols[2] != null ? String.valueOf(cols[2]) : '');
+                    profile.put('sourceProfiles',  cols[3] != null ? Integer.valueOf(String.valueOf(cols[3])) : 0);
+                    profiles.add(profile);
+                }
+            }
+        }
+        return profiles;
     }
 
     public static List<Map<String, String>> searchUnifiedProfiles(String searchTerm) {

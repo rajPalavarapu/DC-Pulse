@@ -1,14 +1,48 @@
 import { LightningElement, api, track } from 'lwc';
-import getSegments from '@salesforce/apex/DataCloudController.getSegments';
+import getSegmentHealthSummary from '@salesforce/apex/DataCloudController.getSegmentHealthSummary';
+import searchSegments from '@salesforce/apex/DataCloudController.searchSegments';
+import getSegmentsByCategory from '@salesforce/apex/DataCloudController.getSegmentsByCategory';
+
+const PAGE_SIZE = 25;
 import getSegmentDetails from '@salesforce/apex/DataCloudController.getSegmentDetails';
 import getActivationReadiness from '@salesforce/apex/DataCloudController.getActivationReadiness';
 import getMissingContactProfiles from '@salesforce/apex/DataCloudController.getMissingContactProfiles';
 
+const DEBOUNCE_DELAY = 300;
+
 export default class SegmentExplainer extends LightningElement {
     @api recordId;
-    @track segmentOptions = [];
-    @track allSegments = [];
+
+    // Health summary (loaded on mount)
+    @track healthSummary = null;
+    @track isLoadingHealth = false;
+
+    // Modal
+    @track modalOpen = false;
+    @track modalTitle = '';
+    @track modalAllRows = [];
+    @track modalFilteredRows = [];
+    @track modalSearchTerm = '';
+    @track modalPage = 1;
+    @track isLoadingModal = false;
+
+    modalColumns = [
+        { label: 'Segment Name',   fieldName: 'displayName' },
+        { label: 'Status',         fieldName: 'segmentStatus' },
+        { label: 'Population',     fieldName: 'lastSegmentMemberCount', type: 'number', cellAttributes: { alignment: 'left' } },
+        { label: 'Refresh',        fieldName: 'publishInterval' }
+    ];
+
+    // Search state
+    @track searchTerm = '';
+    @track searchResults = [];
+    @track isSearching = false;
+    @track showResults = false;
+    _debounceTimer = null;
+
+    // Selected segment
     @track selectedSegment = '';
+    @track selectedSegmentLabel = '';
     @track selectedSegmentData = null;
     @track isLoading = false;
     @track isLoadingReadiness = false;
@@ -35,74 +69,103 @@ export default class SegmentExplainer extends LightningElement {
     ];
 
     connectedCallback() {
-        this.loadSegments();
+        this.loadHealthSummary();
     }
 
-    loadSegments() {
-        this.isLoading = true;
-        getSegments()
+    loadHealthSummary() {
+        this.isLoadingHealth = true;
+        getSegmentHealthSummary()
             .then(result => {
-                const parsed = JSON.parse(result);
-                this.allSegments = parsed.segments;
-                this.segmentOptions = parsed.segments.map(seg => ({
-                    label: seg.displayName,
-                    value: seg.apiName
-                }));
+                this.healthSummary = result;
             })
             .catch(error => {
-                this.errorMessage = 'Failed to load segments: ' + JSON.stringify(error.body);
+                this.errorMessage = 'Failed to load segment health: ' + (error.body ? error.body.message : error.message);
             })
             .finally(() => {
-                this.isLoading = false;
+                this.isLoadingHealth = false;
             });
     }
 
-    handleSegmentChange(event) {
-        this.selectedSegment = event.detail.value;
+    // ── Search handlers ──
+    handleSearchInput(event) {
+        this.searchTerm = event.target.value;
+        if (this._debounceTimer) clearTimeout(this._debounceTimer);
+        if (!this.searchTerm || this.searchTerm.length < 3) {
+            this.searchResults = [];
+            this.showResults = false;
+            return;
+        }
+        this._debounceTimer = setTimeout(() => {
+            this._runSearch(this.searchTerm);
+        }, DEBOUNCE_DELAY);
+    }
+
+    _runSearch(term) {
+        this.isSearching = true;
+        this.showResults = true;
+        searchSegments({ searchTerm: term })
+            .then(results => {
+                this.searchResults = results;
+            })
+            .catch(error => {
+                this.errorMessage = 'Search failed: ' + (error.body ? error.body.message : error.message);
+            })
+            .finally(() => {
+                this.isSearching = false;
+            });
+    }
+
+    handleSelectSearchResult(event) {
+        const apiName = event.currentTarget.dataset.apiName;
+        const displayName = event.currentTarget.dataset.displayName;
+        this.selectedSegment = apiName;
+        this.selectedSegmentLabel = displayName;
+        this.searchTerm = displayName;
+        this.showResults = false;
+        this.searchResults = [];
         this.activationReadiness = null;
         this.missingEmailProfiles = null;
         this.missingPhoneProfiles = null;
         this.showMissingEmail = false;
         this.showMissingPhone = false;
         this.errorMessage = '';
-        this.loadSegmentDetails(this.selectedSegment);
+        this.loadSegmentDetails(apiName);
+    }
+
+    handleSearchClear() {
+        this.searchTerm = '';
+        this.searchResults = [];
+        this.showResults = false;
+        this.selectedSegment = '';
+        this.selectedSegmentLabel = '';
+        this.selectedSegmentData = null;
+        this.activationReadiness = null;
+        this.errorMessage = '';
     }
 
     // ── Segment Health Dashboard ──
     get totalSegmentCount() {
-        return this.allSegments.length;
-    }
-
-    get zeroPopulationSegments() {
-        return this.allSegments.filter(s => !s.lastSegmentMemberCount || s.lastSegmentMemberCount === 0);
+        return this.healthSummary ? this.healthSummary.totalCount : 0;
     }
 
     get zeroPopulationCount() {
-        return this.zeroPopulationSegments.length;
+        return this.healthSummary ? this.healthSummary.zeroPopulationCount : 0;
     }
 
     get hasZeroPopulation() {
         return this.zeroPopulationCount > 0;
     }
 
-    get inactiveSegments() {
-        return this.allSegments.filter(s => s.segmentStatus === 'INACTIVE');
-    }
-
     get inactiveCount() {
-        return this.inactiveSegments.length;
+        return this.healthSummary ? this.healthSummary.inactiveCount : 0;
     }
 
     get hasInactive() {
         return this.inactiveCount > 0;
     }
 
-    get manualRefreshSegments() {
-        return this.allSegments.filter(s => s.publishInterval === 'NO_REFRESH');
-    }
-
     get manualRefreshCount() {
-        return this.manualRefreshSegments.length;
+        return this.healthSummary ? this.healthSummary.manualRefreshCount : 0;
     }
 
     get hasManualRefresh() {
@@ -110,15 +173,31 @@ export default class SegmentExplainer extends LightningElement {
     }
 
     get zeroPopulationNames() {
-        return this.zeroPopulationSegments.map(s => s.displayName).join(', ');
+        return this.healthSummary ? this.healthSummary.zeroPopulationNames.join(', ') : '';
     }
 
     get inactiveNames() {
-        return this.inactiveSegments.map(s => s.displayName).join(', ');
+        return this.healthSummary ? this.healthSummary.inactiveNames.join(', ') : '';
     }
 
     get manualRefreshNames() {
-        return this.manualRefreshSegments.map(s => s.displayName).join(', ');
+        return this.healthSummary ? this.healthSummary.manualRefreshNames.join(', ') : '';
+    }
+
+    get hasHealthSummary() {
+        return this.healthSummary !== null;
+    }
+
+    get noSearchResults() {
+        return !this.isSearching && this.showResults && this.searchResults.length === 0;
+    }
+
+    get hasSearchResults() {
+        return this.showResults && this.searchResults.length > 0;
+    }
+
+    get hasSelectedSegment() {
+        return !!this.selectedSegment;
     }
 
     // ── Filter Limit Checker ──
@@ -346,7 +425,10 @@ export default class SegmentExplainer extends LightningElement {
                 const parsed = JSON.parse(result);
                 this.selectedSegmentData = parsed.segments[0];
                 if (this.hasMembershipTable && this.isIndividualBased) {
-                    this.loadActivationReadiness(this.selectedSegmentData.segmentMembershipDmo.latestTable);
+                    this.loadActivationReadiness(
+                        this.selectedSegmentData.segmentMembershipDmo.latestTable,
+                        this.selectedSegmentData.marketSegmentId
+                    );
                 }
             })
             .catch(error => {
@@ -357,10 +439,10 @@ export default class SegmentExplainer extends LightningElement {
             });
     }
 
-    loadActivationReadiness(membershipTable) {
+    loadActivationReadiness(membershipTable, marketSegmentId) {
         this.isLoadingReadiness = true;
         const segmentOnApiName = this.selectedSegmentData ? this.selectedSegmentData.segmentOnApiName : '';
-        getActivationReadiness({ membershipTable, segmentOnApiName })
+        getActivationReadiness({ membershipTable, segmentOnApiName, marketSegmentId })
             .then(result => {
                 this.activationReadiness = result;
             })
@@ -370,6 +452,77 @@ export default class SegmentExplainer extends LightningElement {
             .finally(() => {
                 this.isLoadingReadiness = false;
             });
+    }
+
+    handleTileClick(event) {
+        const category = event.currentTarget.dataset.category;
+        const titles = { zero: 'Zero Population Segments', inactive: 'Inactive Segments', manual: 'No Auto-Refresh Segments' };
+        this.modalTitle = titles[category];
+        this.modalAllRows = [];
+        this.modalFilteredRows = [];
+        this.modalSearchTerm = '';
+        this.modalPage = 1;
+        this.modalOpen = true;
+        this.isLoadingModal = true;
+        getSegmentsByCategory({ category })
+            .then(data => {
+                this.modalAllRows = data;
+                this.modalFilteredRows = data;
+            })
+            .catch(err => { this.errorMessage = err.body ? err.body.message : err.message; this.modalOpen = false; })
+            .finally(() => { this.isLoadingModal = false; });
+    }
+
+    handleModalSearchInput(event) {
+        this.modalSearchTerm = event.target.value;
+        this.modalPage = 1;
+        const term = this.modalSearchTerm.toLowerCase();
+        this.modalFilteredRows = term
+            ? this.modalAllRows.filter(r => r.displayName && r.displayName.toLowerCase().includes(term))
+            : this.modalAllRows;
+    }
+
+    handleModalClose() {
+        this.modalOpen = false;
+    }
+
+    handleModalDialogClick(event) {
+        event.stopPropagation();
+    }
+
+    handleModalPrev() {
+        if (this.modalPage > 1) this.modalPage -= 1;
+    }
+
+    handleModalNext() {
+        if (this.modalPage < this.modalTotalPages) this.modalPage += 1;
+    }
+
+    get modalPagedRows() {
+        const start = (this.modalPage - 1) * PAGE_SIZE;
+        return this.modalFilteredRows.slice(start, start + PAGE_SIZE);
+    }
+
+    get modalTotalPages() {
+        return Math.max(1, Math.ceil(this.modalFilteredRows.length / PAGE_SIZE));
+    }
+
+    get modalPageInfo() {
+        return 'Page ' + this.modalPage + ' of ' + this.modalTotalPages + ' (' + this.modalFilteredRows.length + ' segments)';
+    }
+
+    get modalHasPrev() { return this.modalPage > 1; }
+    get modalHasNext() { return this.modalPage < this.modalTotalPages; }
+    get modalDisabledPrev() { return !this.modalHasPrev; }
+    get modalDisabledNext() { return !this.modalHasNext; }
+
+    handleCopyQuery(event) {
+        const btn = event.currentTarget;
+        const query = btn.dataset.query;
+        navigator.clipboard.writeText(query).then(() => {
+            btn.title = 'Copied!';
+            setTimeout(() => { btn.title = 'Copy query'; }, 2000);
+        });
     }
 
     handleViewMissingEmail() {

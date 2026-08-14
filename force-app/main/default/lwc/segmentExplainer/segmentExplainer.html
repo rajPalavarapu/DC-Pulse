@@ -1,8 +1,8 @@
 <template>
     <lightning-card>
 
-        <!-- Loading Spinner -->
-        <template lwc:if={isLoading}>
+        <!-- Health Summary Loading -->
+        <template lwc:if={isLoadingHealth}>
             <div class="slds-align_absolute-center slds-p-around_large">
                 <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
             </div>
@@ -15,71 +15,115 @@
                 <lightning-tab label="Segment Analyzer" value="segment">
 
                     <!-- Segment Health Dashboard -->
-                    <template lwc:if={totalSegmentCount}>
+                    <template lwc:if={hasHealthSummary}>
                         <div class="slds-box slds-m-bottom_medium">
                             <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_small">
                                 <div class="slds-col">
                                     <p class="slds-text-title_caps">Segment Health Overview</p>
-                                    <p class="slds-text-color_weak slds-text-body_small">{totalSegmentCount} segments in this org</p>
+                                    <p class="slds-text-color_weak slds-text-body_small">{totalSegmentCount} segments in this org (based on first 500)</p>
                                 </div>
                             </div>
                             <div class="slds-grid slds-gutters">
 
                                 <div class="slds-col slds-size_1-of-3">
-                                    <div class="slds-box slds-text-align_center">
+                                    <button class="health-tile slds-box slds-text-align_center" data-category="zero" onclick={handleTileClick}>
                                         <lightning-icon icon-name="utility:error" size="small" variant="error" class="slds-m-bottom_x-small"></lightning-icon>
                                         <p class="slds-text-heading_medium">{zeroPopulationCount}</p>
                                         <p class="slds-text-title_caps slds-m-bottom_x-small">Zero Population</p>
                                         <template lwc:if={hasZeroPopulation}>
-                                            <p class="slds-text-body_small slds-text-color_weak">{zeroPopulationNames}</p>
+                                            <p class="slds-text-body_small slds-text-color_weak">Click to view list</p>
                                         </template>
                                         <template lwc:else>
                                             <p class="slds-text-body_small slds-text-color_weak">None — all segments have members</p>
                                         </template>
-                                    </div>
+                                    </button>
                                 </div>
 
                                 <div class="slds-col slds-size_1-of-3">
-                                    <div class="slds-box slds-text-align_center">
+                                    <button class="health-tile slds-box slds-text-align_center" data-category="inactive" onclick={handleTileClick}>
                                         <lightning-icon icon-name="utility:ban" size="small" variant="warning" class="slds-m-bottom_x-small"></lightning-icon>
                                         <p class="slds-text-heading_medium">{inactiveCount}</p>
                                         <p class="slds-text-title_caps slds-m-bottom_x-small">Inactive</p>
                                         <template lwc:if={hasInactive}>
-                                            <p class="slds-text-body_small slds-text-color_weak">{inactiveNames}</p>
+                                            <p class="slds-text-body_small slds-text-color_weak">Click to view list</p>
                                         </template>
                                         <template lwc:else>
                                             <p class="slds-text-body_small slds-text-color_weak">None — all segments are active</p>
                                         </template>
-                                    </div>
+                                    </button>
                                 </div>
 
                                 <div class="slds-col slds-size_1-of-3">
-                                    <div class="slds-box slds-text-align_center">
+                                    <button class="health-tile slds-box slds-text-align_center" data-category="manual" onclick={handleTileClick}>
                                         <lightning-icon icon-name="utility:clock" size="small" variant="warning" class="slds-m-bottom_x-small"></lightning-icon>
                                         <p class="slds-text-heading_medium">{manualRefreshCount}</p>
                                         <p class="slds-text-title_caps slds-m-bottom_x-small">No Auto-Refresh</p>
                                         <template lwc:if={hasManualRefresh}>
-                                            <p class="slds-text-body_small slds-text-color_weak">{manualRefreshNames}</p>
+                                            <p class="slds-text-body_small slds-text-color_weak">Click to view list</p>
                                         </template>
                                         <template lwc:else>
                                             <p class="slds-text-body_small slds-text-color_weak">None — all segments have a schedule</p>
                                         </template>
-                                    </div>
+                                    </button>
                                 </div>
 
                             </div>
                         </div>
                     </template>
 
-                    <!-- Segment Selector -->
-                    <lightning-combobox
-                        name="segment"
-                        label="Select Segment"
-                        placeholder="Choose a segment..."
-                        value={selectedSegment}
-                        options={segmentOptions}
-                        onchange={handleSegmentChange}>
-                    </lightning-combobox>
+                    <!-- Segment Search -->
+                    <div class="segment-search-container slds-m-bottom_medium">
+                        <div class="slds-form-element">
+                            <label class="slds-form-element__label">Search Segment</label>
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right">
+                                <lightning-icon icon-name="utility:search" size="x-small" class="slds-icon slds-input__icon slds-input__icon_left"></lightning-icon>
+                                <input
+                                    type="text"
+                                    class="slds-input"
+                                    placeholder="Type at least 3 characters to search segments..."
+                                    value={searchTerm}
+                                    oninput={handleSearchInput} />
+                                <template lwc:if={isSearching}>
+                                    <lightning-spinner size="x-small" alternative-text="Searching" class="slds-icon slds-input__icon slds-input__icon_right"></lightning-spinner>
+                                </template>
+                                <template lwc:if={hasSelectedSegment}>
+                                    <button class="slds-button slds-button_icon slds-input__icon slds-input__icon_right" onclick={handleSearchClear} title="Clear">
+                                        <lightning-icon icon-name="utility:clear" size="x-small"></lightning-icon>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Search Results Dropdown -->
+                        <template lwc:if={hasSearchResults}>
+                            <div class="segment-search-results slds-box slds-p-around_none">
+                                <template for:each={searchResults} for:item="result">
+                                    <div key={result.apiName}
+                                         class="segment-result-item slds-p-around_small"
+                                         data-api-name={result.apiName}
+                                         data-display-name={result.displayName}
+                                         onclick={handleSelectSearchResult}>
+                                        <p class="slds-text-body_regular slds-m-bottom_xx-small"><strong>{result.displayName}</strong></p>
+                                        <p class="slds-text-body_small slds-text-color_weak">{result.segmentStatus} &nbsp;·&nbsp; {result.lastSegmentMemberCount} members</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- No Results -->
+                        <template lwc:if={noSearchResults}>
+                            <div class="slds-box slds-m-top_x-small">
+                                <p class="slds-text-body_small slds-text-color_weak slds-p-around_x-small">No segments found matching &quot;{searchTerm}&quot;</p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Segment Detail Loading -->
+                    <template lwc:if={isLoading}>
+                        <div class="slds-align_absolute-center slds-p-around_medium">
+                            <lightning-spinner alternative-text="Loading segment details" size="small"></lightning-spinner>
+                        </div>
+                    </template>
 
                     <!-- Segment Details Panel -->
                     <template lwc:if={selectedSegmentData}>
@@ -261,7 +305,12 @@
                                                         hide-checkbox-column>
                                                     </lightning-datatable>
                                                     <div class="slds-box slds-theme_shade slds-m-top_small">
-                                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Run in Data Cloud Query Editor for full list:</p>
+                                                        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small">
+                                                            <p class="slds-text-title_caps">Run in Data Cloud Query Editor for full list:</p>
+                                                            <button class="slds-button slds-button_icon slds-button_icon-border-filled" title="Copy query" data-query={missingEmailSql} onclick={handleCopyQuery}>
+                                                                <lightning-icon icon-name="utility:copy" size="x-small"></lightning-icon>
+                                                            </button>
+                                                        </div>
                                                         <pre style="white-space: pre-wrap; font-size: 11px;">{missingEmailSql}</pre>
                                                     </div>
                                                 </template>
@@ -295,7 +344,12 @@
                                                         hide-checkbox-column>
                                                     </lightning-datatable>
                                                     <div class="slds-box slds-theme_shade slds-m-top_small">
-                                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Run in Data Cloud Query Editor for full list:</p>
+                                                        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small">
+                                                            <p class="slds-text-title_caps">Run in Data Cloud Query Editor for full list:</p>
+                                                            <button class="slds-button slds-button_icon slds-button_icon-border-filled" title="Copy query" data-query={missingPhoneSql} onclick={handleCopyQuery}>
+                                                                <lightning-icon icon-name="utility:copy" size="x-small"></lightning-icon>
+                                                            </button>
+                                                        </div>
                                                         <pre style="white-space: pre-wrap; font-size: 11px;">{missingPhoneSql}</pre>
                                                     </div>
                                                 </template>
@@ -336,12 +390,179 @@
                     <c-ir-health></c-ir-health>
                 </lightning-tab>
 
-                <!-- ── TAB 3: ADOPTABILITY ── -->
+                <!-- ── TAB 3: ADOPTABILITY (hidden — scoring not aligned with project direction; revisit in future release) ── -->
+                <!--
                 <lightning-tab label="Adoptability" value="adoptability">
                     <c-adoptability></c-adoptability>
+                </lightning-tab>
+                -->
+
+                <!-- ── TAB 4: DATA STREAMS HEALTH (future) ── -->
+                <lightning-tab label="Data Streams" value="datastreams">
+                    <div class="cs-container">
+                        <div class="cs-header">
+                            <lightning-icon icon-name="standard:data_streams" size="large"></lightning-icon>
+                            <div class="cs-title-block">
+                                <h2 class="slds-text-heading_large">Data Streams Health</h2>
+                                <span class="cs-badge">Coming Soon</span>
+                            </div>
+                        </div>
+                        <p class="cs-desc">Monitor active vs inactive streams, last run times, ingestion record counts, and flag stale streams that haven&apos;t run recently.</p>
+                        <div class="cs-grid">
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:check" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Stream Status</h3>
+                                <p class="cs-card-body">Active vs inactive status for every data stream at a glance.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:clock" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Last Run Times</h3>
+                                <p class="cs-card-body">See when each stream last ingested data and flag overdue ones.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:database" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Ingestion Counts</h3>
+                                <p class="cs-card-body">Record counts per stream per run to spot drops or spikes early.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:warning" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Stale Stream Alerts</h3>
+                                <p class="cs-card-body">Automatic flags for streams that have not run within expected windows.</p>
+                            </div>
+                        </div>
+                    </div>
+                </lightning-tab>
+
+                <!-- ── TAB 5: CALCULATED INSIGHTS MONITOR (future) ── -->
+                <lightning-tab label="Calculated Insights" value="calculatedinsights">
+                    <div class="cs-container">
+                        <div class="cs-header">
+                            <lightning-icon icon-name="standard:metrics" size="large"></lightning-icon>
+                            <div class="cs-title-block">
+                                <h2 class="slds-text-heading_large">Calculated Insights Monitor</h2>
+                                <span class="cs-badge">Coming Soon</span>
+                            </div>
+                        </div>
+                        <p class="cs-desc">Track CI status, last refresh time, schedule health, and flag insights with no data or overdue refreshes.</p>
+                        <div class="cs-grid">
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:metrics" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">CI Status Overview</h3>
+                                <p class="cs-card-body">See which calculated insights are active, paused, or erroring.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:refresh" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Refresh Schedule Health</h3>
+                                <p class="cs-card-body">Monitor scheduled refresh cadence and flag missed or delayed runs.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:error" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">No-Data Alerts</h3>
+                                <p class="cs-card-body">Surface insights returning zero rows so you can investigate quickly.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:trending" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Output Trends</h3>
+                                <p class="cs-card-body">Track row counts over time to detect unexpected drops or growth.</p>
+                            </div>
+                        </div>
+                    </div>
+                </lightning-tab>
+
+                <!-- ── TAB 6: ACTIVATION HEALTH (future) ── -->
+                <lightning-tab label="Activation Health" value="activationhealth">
+                    <div class="cs-container">
+                        <div class="cs-header">
+                            <lightning-icon icon-name="standard:channel_programs" size="large"></lightning-icon>
+                            <div class="cs-title-block">
+                                <h2 class="slds-text-heading_large">Activation Health</h2>
+                                <span class="cs-badge">Coming Soon</span>
+                            </div>
+                        </div>
+                        <p class="cs-desc">View activation publish status, last publish time, record counts, and surface activations with errors or zero records.</p>
+                        <div class="cs-grid">
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:upload" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Publish Status</h3>
+                                <p class="cs-card-body">Live status for every activation — succeeded, failed, or in progress.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:clock" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Last Publish Times</h3>
+                                <p class="cs-card-body">See when each activation last ran and flag ones overdue for refresh.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:people" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Record Counts</h3>
+                                <p class="cs-card-body">Profiles published per activation run to spot zero-record failures.</p>
+                            </div>
+                            <div class="cs-card">
+                                <lightning-icon icon-name="utility:error" size="small" class="cs-card-icon"></lightning-icon>
+                                <h3 class="cs-card-title">Error Surfacing</h3>
+                                <p class="cs-card-body">Highlight activations with errors or zero records needing attention.</p>
+                            </div>
+                        </div>
+                    </div>
                 </lightning-tab>
 
             </lightning-tabset>
         </div>
     </lightning-card>
+
+    <!-- Segment Health Modal -->
+    <template lwc:if={modalOpen}>
+        <div class="custom-modal-overlay" onclick={handleModalClose}>
+            <div class="custom-modal-dialog" onclick={handleModalDialogClick}>
+                <div class="custom-modal-header">
+                    <h2 class="slds-text-heading_medium">{modalTitle}</h2>
+                    <button class="slds-button slds-button_icon" onclick={handleModalClose} title="Close">
+                        <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
+                    </button>
+                </div>
+                <div class="custom-modal-body">
+                    <template lwc:if={isLoadingModal}>
+                        <div class="slds-align_absolute-center slds-p-around_large">
+                            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <lightning-input
+                            type="search"
+                            label="Filter segments"
+                            placeholder="Type to filter..."
+                            value={modalSearchTerm}
+                            onchange={handleModalSearchInput}
+                            class="slds-m-bottom_small">
+                        </lightning-input>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">{modalPageInfo}</p>
+                        <lightning-datatable
+                            key-field="apiName"
+                            data={modalPagedRows}
+                            columns={modalColumns}
+                            hide-checkbox-column>
+                        </lightning-datatable>
+                        <div class="slds-grid slds-grid_align-center slds-m-top_small">
+                            <lightning-button
+                                label="Previous"
+                                icon-name="utility:chevronleft"
+                                disabled={modalDisabledPrev}
+                                onclick={handleModalPrev}
+                                class="slds-m-right_x-small">
+                            </lightning-button>
+                            <lightning-button
+                                label="Next"
+                                icon-name="utility:chevronright"
+                                icon-position="right"
+                                disabled={modalDisabledNext}
+                                onclick={handleModalNext}>
+                            </lightning-button>
+                        </div>
+                    </template>
+                </div>
+                <div class="custom-modal-footer">
+                    <lightning-button label="Close" variant="brand" onclick={handleModalClose}></lightning-button>
+                </div>
+            </div>
+        </div>
+    </template>
 </template>

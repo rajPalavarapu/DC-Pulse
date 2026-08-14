@@ -7,6 +7,6 @@
         <target>lightning__RecordPage</target>
         <target>lightning__HomePage</target>
     </targets>
-    <masterLabel>DC Pulse</masterLabel>
-    <description>DC Pulse - Analyze segment health, activation readiness, and identity resolution diagnostics</description>
+    <masterLabel>Data Cloud Insights</masterLabel>
+    <description>Data Cloud Insights - Analyze segment health, activation readiness, and identity resolution diagnostics</description>
 </LightningComponentBundle>

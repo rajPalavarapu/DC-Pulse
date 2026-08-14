@@ -5,14 +5,41 @@ public with sharing class DataCloudController {
         return DataCloudService.getSegments();
     }
 
+    @AuraEnabled(cacheable=false)
+    public static List<Map<String, Object>> getSegmentsByCategory(String category) {
+        try {
+            return DataCloudService.getSegmentsByCategory(category);
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static Map<String, Object> getSegmentHealthSummary() {
+        try {
+            return DataCloudService.getSegmentHealthSummary();
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static List<Map<String, Object>> searchSegments(String searchTerm) {
+        try {
+            return DataCloudService.searchSegments(searchTerm);
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
     @AuraEnabled(cacheable=true)
     public static String getSegmentDetails(String segmentApiName) {
         return DataCloudService.getSegmentDetails(segmentApiName);
     }
 
     @AuraEnabled(cacheable=false)
-    public static Map<String, Integer> getActivationReadiness(String membershipTable, String segmentOnApiName) {
-        return DataCloudService.getActivationReadiness(membershipTable, segmentOnApiName);
+    public static Map<String, Integer> getActivationReadiness(String membershipTable, String segmentOnApiName, String marketSegmentId) {
+        return DataCloudService.getActivationReadiness(membershipTable, segmentOnApiName, marketSegmentId);
     }
 
     @AuraEnabled(cacheable=false)
@@ -33,6 +60,15 @@ public with sharing class DataCloudController {
     @AuraEnabled(cacheable=false)
     public static List<Map<String, Object>> getSuspiciousMerges(Integer threshold) {
         return DataCloudService.getSuspiciousMerges(threshold);
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static List<Map<String, Object>> getProfileExplorer(String searchTerm) {
+        try {
+            return DataCloudService.getProfileExplorer(searchTerm);
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
     }
 
     @AuraEnabled(cacheable=false)

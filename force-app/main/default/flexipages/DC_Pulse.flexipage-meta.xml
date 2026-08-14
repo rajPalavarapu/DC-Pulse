@@ -10,7 +10,7 @@
         <name>main</name>
         <type>Region</type>
     </flexiPageRegions>
-    <masterLabel>DC Pulse</masterLabel>
+    <masterLabel>Data Cloud Insights</masterLabel>
     <template>
         <name>flexipage:defaultAppHomeTemplate</name>
     </template>

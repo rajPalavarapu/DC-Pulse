@@ -27,15 +27,15 @@ export default class IrHealth extends LightningElement {
         { label: 'First Name', fieldName: 'firstName' },
         { label: 'Last Name', fieldName: 'lastName' },
         { label: 'Unified ID', fieldName: 'unifiedId' },
-        { label: 'Source Records Merged', fieldName: 'mergeCount', type: 'number', cellAttributes: { alignment: 'left' } },
-        { type: 'action', typeAttributes: { rowActions: [{ label: 'View Merges', name: 'view' }] } }
+        { label: 'Linked Source Records', fieldName: 'mergeCount', type: 'number', cellAttributes: { alignment: 'left' } },
+        { type: 'action', typeAttributes: { rowActions: [{ label: 'View Linked Records', name: 'view' }] } }
     ];
 
     searchResultColumns = [
         { label: 'First Name', fieldName: 'firstName' },
         { label: 'Last Name', fieldName: 'lastName' },
         { label: 'Unified ID', fieldName: 'unifiedId' },
-        { type: 'action', typeAttributes: { rowActions: [{ label: 'View Merges', name: 'view' }] } }
+        { type: 'action', typeAttributes: { rowActions: [{ label: 'View Linked Records', name: 'view' }] } }
     ];
 
     mergeDetailColumns = [
@@ -95,6 +95,22 @@ loadSuspiciousMerges() {
             });
     }
 
+    drillIntoProfile(row) {
+        this.selectedProfile = row;
+        this.mergeDetail = null;
+        this.isLoadingDetail = true;
+        getProfileMergeDetail({ unifiedId: row.unifiedId })
+            .then(result => {
+                this.mergeDetail = result;
+            })
+            .catch(error => {
+                this.errorMessage = 'Failed to load merge detail: ' + JSON.stringify(error.body);
+            })
+            .finally(() => {
+                this.isLoadingDetail = false;
+            });
+    }
+
     handleSearchChange(event) {
         this.searchTerm = event.target.value;
     }
@@ -117,31 +133,9 @@ loadSuspiciousMerges() {
         this.selectedProfile = null;
         this.mergeDetail = null;
         searchUnifiedProfiles({ searchTerm: this.searchTerm.trim() })
-            .then(result => {
-                this.searchResults = result;
-            })
-            .catch(error => {
-                this.errorMessage = 'Search failed: ' + JSON.stringify(error.body);
-            })
-            .finally(() => {
-                this.isSearching = false;
-            });
-    }
-
-    drillIntoProfile(row) {
-        this.selectedProfile = row;
-        this.mergeDetail = null;
-        this.isLoadingDetail = true;
-        getProfileMergeDetail({ unifiedId: row.unifiedId })
-            .then(result => {
-                this.mergeDetail = result;
-            })
-            .catch(error => {
-                this.errorMessage = 'Failed to load merge detail: ' + JSON.stringify(error.body);
-            })
-            .finally(() => {
-                this.isLoadingDetail = false;
-            });
+            .then(result => { this.searchResults = result; })
+            .catch(error => { this.errorMessage = 'Search failed: ' + JSON.stringify(error.body); })
+            .finally(() => { this.isSearching = false; });
     }
 
     handleProfileSelect(event) {
@@ -175,14 +169,6 @@ loadSuspiciousMerges() {
 
     get suspiciousToggleIcon() {
         return this.suspiciousExpanded ? 'utility:chevronup' : 'utility:chevrondown';
-    }
-
-    get hasSearchResults() {
-        return this.searchResults && this.searchResults.length > 0;
-    }
-
-    get noSearchResults() {
-        return this.searchResults && this.searchResults.length === 0;
     }
 
     get selectedProfileName() {
@@ -295,5 +281,13 @@ loadSuspiciousMerges() {
 
     get hasMergeChart() {
         return this.mergeDetail && this.mergeDetail.length > 0;
+    }
+
+    get hasSearchResults() {
+        return this.searchResults && this.searchResults.length > 0;
+    }
+
+    get noSearchResults() {
+        return this.searchResults && this.searchResults.length === 0;
     }
 }
