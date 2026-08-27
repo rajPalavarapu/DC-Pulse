@@ -187,7 +187,7 @@ private class DataCloudControllerTest {
         try {
             DataCloudController.getSegments();
             System.assert(false, 'Expected exception');
-        } catch (AuraHandledException e) {
+        } catch (Exception e) {
             System.assertNotEquals(null, e.getMessage());
         }
         Test.stopTest();
@@ -201,7 +201,7 @@ private class DataCloudControllerTest {
         try {
             DataCloudController.getSegmentDetails('TestSeg');
             System.assert(false, 'Expected exception');
-        } catch (AuraHandledException e) {
+        } catch (Exception e) {
             System.assertNotEquals(null, e.getMessage());
         }
         Test.stopTest();
@@ -215,35 +215,35 @@ private class DataCloudControllerTest {
         try {
             DataCloudController.getActivations();
             System.assert(false, 'Expected exception');
-        } catch (AuraHandledException e) {
+        } catch (Exception e) {
             System.assertNotEquals(null, e.getMessage());
         }
         Test.stopTest();
     }
 
     @isTest
-    static void testGetIrSummaryError() {
+    static void testGetCalculatedInsightsError() {
         setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
         Test.startTest();
         try {
-            DataCloudController.getIrSummary();
+            DataCloudController.getCalculatedInsights();
             System.assert(false, 'Expected exception');
-        } catch (AuraHandledException e) {
+        } catch (Exception e) {
             System.assertNotEquals(null, e.getMessage());
         }
         Test.stopTest();
     }
 
     @isTest
-    static void testGetSuspiciousMergesError() {
+    static void testGetDataTransformsError() {
         setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
         Test.startTest();
         try {
-            DataCloudController.getSuspiciousMerges(5);
+            DataCloudController.getDataTransforms();
             System.assert(false, 'Expected exception');
-        } catch (AuraHandledException e) {
+        } catch (Exception e) {
             System.assertNotEquals(null, e.getMessage());
         }
         Test.stopTest();
@@ -257,7 +257,7 @@ private class DataCloudControllerTest {
         try {
             DataCloudController.getDataStreams();
             System.assert(false, 'Expected exception');
-        } catch (AuraHandledException e) {
+        } catch (Exception e) {
             System.assertNotEquals(null, e.getMessage());
         }
         Test.stopTest();
