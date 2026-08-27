@@ -178,4 +178,88 @@ private class DataCloudControllerTest {
         System.assertNotEquals(null, result);
         System.assert(result.size() > 0);
     }
+
+    @isTest
+    static void testGetSegmentsError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getSegments();
+            System.assert(false, 'Expected exception');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetSegmentDetailsError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getSegmentDetails('TestSeg');
+            System.assert(false, 'Expected exception');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetActivationsError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getActivations();
+            System.assert(false, 'Expected exception');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetIrSummaryError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getIrSummary();
+            System.assert(false, 'Expected exception');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetSuspiciousMergesError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getSuspiciousMerges(5);
+            System.assert(false, 'Expected exception');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetDataStreamsError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getDataStreams();
+            System.assert(false, 'Expected exception');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
 }
