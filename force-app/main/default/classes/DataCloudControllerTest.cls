@@ -180,6 +180,112 @@ private class DataCloudControllerTest {
     }
 
     @isTest
+    static void testGetSegmentsByCategory() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        List<Map<String, Object>> result = DataCloudController.getSegmentsByCategory('zero');
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetSegmentsByCategoryError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getSegmentsByCategory('zero');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetSegmentHealthSummary() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        Map<String, Object> result = DataCloudController.getSegmentHealthSummary();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetSegmentHealthSummaryError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getSegmentHealthSummary();
+        } catch (Exception e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testSearchSegments() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        List<Map<String, Object>> result = DataCloudController.searchSegments('Test');
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testSearchSegmentsError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.searchSegments('Test');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetProfileExplorer() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        List<Map<String, Object>> result = DataCloudController.getProfileExplorer('John');
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetProfileExplorerError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getProfileExplorer('John');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetSegmentOverlapError() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
+        Test.startTest();
+        try {
+            DataCloudController.getSegmentOverlap();
+            System.assert(false, 'Expected exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @isTest
     static void testGetSegmentsError() {
         setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('apiError'));
