@@ -97,4 +97,85 @@ private class DataCloudControllerTest {
         Test.stopTest();
         System.assertNotEquals(null, result);
     }
+
+    @isTest
+    static void testGetActivations() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudController.getActivations();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetCalculatedInsights() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudController.getCalculatedInsights();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetActivationPlatforms() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudController.getActivationPlatforms();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetDmoCoverage() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        Map<String, Integer> result = DataCloudController.getDmoCoverage();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetOrgContactPointCoverage() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        Map<String, Integer> result = DataCloudController.getOrgContactPointCoverage();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetDataTransforms() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudController.getDataTransforms();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetDataStreams() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        String result = DataCloudController.getDataStreams();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+    }
+
+    @isTest
+    static void testGetSegmentOverlap() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('overlapData'));
+        Test.startTest();
+        List<Map<String, Object>> result = DataCloudController.getSegmentOverlap();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.size() > 0);
+    }
 }
