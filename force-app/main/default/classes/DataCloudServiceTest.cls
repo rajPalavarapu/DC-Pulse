@@ -356,4 +356,29 @@ private class DataCloudServiceTest {
         }
         Test.stopTest();
     }
+
+    @isTest
+    static void testGetSegmentOverlapEmpty() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
+        Test.startTest();
+        List<Map<String, Object>> result = DataCloudService.getSegmentOverlap();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assertEquals(0, result.size());
+    }
+
+    @isTest
+    static void testGetSegmentOverlap() {
+        setupConfig();
+        Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('overlapData'));
+        Test.startTest();
+        List<Map<String, Object>> result = DataCloudService.getSegmentOverlap();
+        Test.stopTest();
+        System.assertNotEquals(null, result);
+        System.assert(result.size() > 0);
+        System.assert(result[0].containsKey('segmentA'));
+        System.assert(result[0].containsKey('segmentB'));
+        System.assert(result[0].containsKey('overlapCount'));
+    }
 }

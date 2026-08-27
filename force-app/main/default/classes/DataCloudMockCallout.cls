@@ -53,6 +53,37 @@ global class DataCloudMockCallout implements HttpCalloutMock {
             return res;
         }
 
+        if (mode == 'overlapData') {
+            if (endpoint.contains('/ssot/segments') && !endpoint.contains('/ssot/segments/') && req.getMethod() == 'GET') {
+                res.setStatusCode(200);
+                res.setBody('{"segments":['
+                    + '{"apiName":"SegA","displayName":"Segment A","segmentStatus":"ACTIVE","lastSegmentMemberCount":100},'
+                    + '{"apiName":"SegB","displayName":"Segment B","segmentStatus":"ACTIVE","lastSegmentMemberCount":100}'
+                    + ']}');
+                return res;
+            }
+            if (endpoint.contains('/ssot/segments/') && req.getMethod() == 'GET') {
+                res.setStatusCode(200);
+                res.setBody('{"segments":[{"apiName":"SegA","marketSegmentId":"a1B2c3D4e5F6g7H8i9J0",'
+                    + '"segmentMembershipDmo":{"latestTable":"SegMembership__dlm"}}]}');
+                return res;
+            }
+            if (endpoint.contains('/ssot/query-sql')) {
+                String body = req.getBody();
+                if (body != null && body.contains('MAX')) {
+                    res.setStatusCode(200);
+                    res.setBody('{"data":[["2024-01-01T00:00:00.000Z"]]}');
+                } else {
+                    res.setStatusCode(200);
+                    res.setBody('{"data":[[50]]}');
+                }
+                return res;
+            }
+            res.setStatusCode(200);
+            res.setBody('{}');
+            return res;
+        }
+
         if (endpoint.endsWith('/ssot/segments') && req.getMethod() == 'GET') {
             res.setStatusCode(200);
             res.setBody('{"segments":[{"apiName":"TestSeg","displayName":"Test Segment","segmentStatus":"ACTIVE","lastSegmentMemberCount":100}]}');
