@@ -1,0 +1,105 @@
+<template>
+    <div class="ol-container">
+
+        <!-- Header -->
+        <div class="ol-header">
+            <div class="ol-header-text">
+                <p class="slds-text-title_caps">Segment Overlap Analyzer</p>
+                <p class="slds-text-color_weak slds-text-body_small">Scans top 10 active segments by population and surfaces all pairs with significant overlap. Helps identify duplicate audiences and activation waste.</p>
+            </div>
+            <button class="ol-run-btn" onclick={handleRun} disabled={isLoading}>
+                <template lwc:if={isLoading}>
+                    <lightning-spinner size="x-small" alternative-text="Analyzing" variant="inverse"></lightning-spinner>
+                    <span>Analyzing...</span>
+                </template>
+                <template lwc:else>
+                    <lightning-icon icon-name="utility:search" size="x-small" class="ol-btn-icon"></lightning-icon>
+                    <span>Run Analysis</span>
+                </template>
+            </button>
+        </div>
+
+        <!-- Loading state -->
+        <template lwc:if={isLoading}>
+            <div class="ol-loading-card">
+                <lightning-spinner size="medium" alternative-text="Analyzing segments"></lightning-spinner>
+                <p class="ol-loading-text">Fetching profile IDs across all published segments and computing overlaps...</p>
+                <p class="ol-loading-sub">This may take 20–60 seconds depending on the number of segments.</p>
+            </div>
+        </template>
+
+        <!-- Error -->
+        <template lwc:if={errorMessage}>
+            <div class="ol-error">
+                <lightning-icon icon-name="utility:error" size="x-small" class="ol-error-icon"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <!-- No overlap found -->
+        <template lwc:if={noOverlap}>
+            <div class="ol-empty">
+                <lightning-icon icon-name="utility:check" size="large" class="ol-empty-icon"></lightning-icon>
+                <p class="ol-empty-title">No significant overlaps found</p>
+                <p class="ol-empty-sub">No overlapping pairs found among the top 10 active segments by population (minimum 25% threshold).</p>
+            </div>
+        </template>
+
+        <!-- Results -->
+        <template lwc:if={hasResults}>
+
+            <div class="ol-results-header">
+                <span class="ol-results-label">{resultLabel}</span>
+                <span class="ol-legend">
+                    <span class="ol-legend-dot ol-legend-dot_high"></span> &ge;60%
+                    <span class="ol-legend-dot ol-legend-dot_mid"></span> 25–59%
+                    <span class="ol-legend-dot ol-legend-dot_low"></span> 5–24%
+                </span>
+            </div>
+
+            <div class="ol-table">
+
+                <!-- Table header -->
+                <div class="ol-row ol-row_head">
+                    <div class="ol-col ol-col_rank">#</div>
+                    <div class="ol-col ol-col_seg">Segment A</div>
+                    <div class="ol-col ol-col_seg">Segment B</div>
+                    <div class="ol-col ol-col_count">Overlap</div>
+                    <div class="ol-col ol-col_bar">% Overlap</div>
+                </div>
+
+                <!-- Rows -->
+                <template for:each={pairs} for:item="pair">
+                    <div key={pair.key} class="ol-row ol-row_data">
+                        <div class="ol-col ol-col_rank">
+                            <span class="ol-rank">{pair.rankLabel}</span>
+                        </div>
+                        <div class="ol-col ol-col_seg">
+                            <span class="ol-seg-name">{pair.segmentA}</span>
+                            <span class="ol-seg-count">{pair.countA} profiles</span>
+                        </div>
+                        <div class="ol-col ol-col_seg">
+                            <span class="ol-seg-name">{pair.segmentB}</span>
+                            <span class="ol-seg-count">{pair.countB} profiles</span>
+                        </div>
+                        <div class="ol-col ol-col_count">
+                            <span class="ol-overlap-count">{pair.overlapCount}</span>
+                            <span class="ol-overlap-sub">shared profiles</span>
+                        </div>
+                        <div class="ol-col ol-col_bar">
+                            <div class="ol-bar-track">
+                                <div class={pair.severityClass} style={pair.barStyle}></div>
+                            </div>
+                            <span class="ol-pct-label">{pair.pctLabel}</span>
+                        </div>
+                    </div>
+                </template>
+
+            </div>
+
+            <p class="ol-footer-note">Analyzes top 10 active segments by population. Overlap % is the percentage of profiles shared between both segments relative to the smaller one. Pairs below 25% are excluded.</p>
+
+        </template>
+
+    </div>
+</template>

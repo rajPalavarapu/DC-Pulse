@@ -262,7 +262,7 @@ loadSuspiciousMerges() {
                 index:    String(i + 1),
                 dsLabel:  trunc(rec.dataSourceId, 26),
                 dsoLabel: trunc(rec.dataSourceObjectId, 26),
-                srcShort: rec.sourceRecordId ? '…' + rec.sourceRecordId.slice(-16) : '—',
+                srcShort: rec.sourceRecordId ? '…' + rec.sourceRecordId.slice(-18) : '—',
                 spokeKey: 'spoke-' + (rec.sourceRecordId || String(i)),
                 nodeKey:  'node-'  + (rec.sourceRecordId || String(i))
             };

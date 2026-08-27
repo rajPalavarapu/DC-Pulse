@@ -115,4 +115,13 @@ public with sharing class DataCloudController {
     public static String getDataStreams() {
         return DataCloudService.getDataStreams();
     }
+
+    @AuraEnabled(cacheable=false)
+    public static List<Map<String, Object>> getSegmentOverlap() {
+        try {
+            return DataCloudService.getSegmentOverlap();
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }

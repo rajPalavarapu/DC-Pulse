@@ -16,7 +16,7 @@
 
                     <!-- Segment Health Dashboard -->
                     <template lwc:if={hasHealthSummary}>
-                        <div class="slds-box slds-m-bottom_medium">
+                        <div class="slds-box sa-section">
                             <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_small">
                                 <div class="slds-col">
                                     <p class="slds-text-title_caps">Segment Health Overview</p>
@@ -71,8 +71,13 @@
                         </div>
                     </template>
 
-                    <!-- Segment Search -->
-                    <div class="segment-search-container slds-m-bottom_medium">
+                    <!-- Segment Inspector -->
+                    <div class="slds-box sa-section">
+                        <div class="slds-m-bottom_small">
+                            <p class="slds-text-title_caps">Segment Inspector</p>
+                            <p class="slds-text-color_weak slds-text-body_small">Search for a segment to inspect its population, refresh health, criteria, and activation readiness.</p>
+                        </div>
+                    <div class="segment-search-container">
                         <div class="slds-form-element">
                             <label class="slds-form-element__label">Search Segment</label>
                             <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right">
@@ -127,113 +132,91 @@
 
                     <!-- Segment Details Panel -->
                     <template lwc:if={selectedSegmentData}>
-                        <div class="slds-m-top_large">
+                        <div class="slds-m-top_small">
 
-                            <!-- Stats Row -->
-                            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                            <!-- Segment Overview Card -->
+                            <div class="seg-card slds-m-bottom_medium">
 
-                                <div class="slds-col slds-size_1-of-3">
-                                    <div class="slds-box slds-theme_shade slds-text-align_center">
-                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Total Population</p>
-                                        <p class="slds-text-heading_large">{selectedSegmentData.lastSegmentMemberCount}</p>
+                                <!-- Hero row: population + status badge + divider + secondary fields -->
+                                <div class="seg-hero-row">
+                                    <div class="seg-hero-stat">
+                                        <span class="seg-hero-number">{selectedSegmentData.lastSegmentMemberCount}</span>
+                                        <span class="seg-field-label">Total Profiles</span>
+                                    </div>
+
+                                    <div class="seg-hero-divider"></div>
+
+                                    <div class="seg-hero-stat seg-hero-stat_badge">
+                                        <span class={statusBadgeClass}>{selectedSegmentData.segmentStatus}</span>
+                                        <span class="seg-field-label">Status</span>
+                                    </div>
+
+                                    <div class="seg-hero-stat">
+                                        <span class={refreshStatusClass}>{refreshStatusLabel}</span>
+                                        <span class="seg-field-label">Last Refreshed</span>
+                                    </div>
+
+                                    <div class="seg-hero-stat">
+                                        <span class="seg-field-value">{publishIntervalFormatted}</span>
+                                        <span class="seg-field-label">Refresh Schedule</span>
                                     </div>
                                 </div>
 
-                                <div class="slds-col slds-size_1-of-3">
-                                    <div class="slds-box slds-theme_shade slds-text-align_center">
-                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Status</p>
-                                        <p class="slds-text-heading_large">{selectedSegmentData.segmentStatus}</p>
+                                <!-- Metadata strip -->
+                                <div class="seg-meta-strip">
+                                    <div class="seg-meta-field">
+                                        <span class="seg-field-label">API Name</span>
+                                        <span class="seg-meta-value">{selectedSegmentData.apiName}</span>
                                     </div>
+                                    <div class="seg-meta-sep"></div>
+                                    <div class="seg-meta-field">
+                                        <span class="seg-field-label">Built On</span>
+                                        <span class="seg-meta-value">{builtOnLabel}</span>
+                                    </div>
+                                    <div class="seg-meta-sep"></div>
+                                    <div class="seg-meta-field">
+                                        <span class="seg-field-label">Last Modified</span>
+                                        <span class="seg-meta-value">{lastModifiedFormatted}</span>
+                                    </div>
+                                    <template lwc:if={parsedCriteria}>
+                                        <div class="seg-meta-sep"></div>
+                                        <div class="seg-meta-field seg-meta-field_grow">
+                                            <span class="seg-field-label">
+                                                Criteria
+                                                <span class="seg-filter-pill">{filterCountLabel}</span>
+                                            </span>
+                                            <span class="seg-criteria-chip">{parsedCriteria}</span>
+                                        </div>
+                                    </template>
                                 </div>
 
-                                <div class="slds-col slds-size_1-of-3">
-                                    <div class="slds-box slds-theme_shade slds-text-align_center">
-                                        <p class="slds-text-title_caps slds-m-bottom_x-small">Built On</p>
-                                        <p class="slds-text-heading_small">{builtOnLabel}</p>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            <!-- DMO Warning -->
-                            <template lwc:if={showDmoWarning}>
-                                <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_medium" role="alert">
-                                    <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                    <strong>Activation Warning:</strong> This segment is built on the Individual DMO, not Unified Individual. Activating this segment may result in duplicate profiles being sent to the destination.
-                                </div>
-                            </template>
-
-                            <!-- Segment Details -->
-                            <div class="slds-box slds-m-bottom_medium">
-                                <p class="slds-text-title_caps slds-m-bottom_small">Segment Details</p>
-                                <lightning-layout multiple-rows>
-                                    <lightning-layout-item size="6" padding="around-small">
-                                        <p><strong>API Name:</strong> {selectedSegmentData.apiName}</p>
-                                    </lightning-layout-item>
-                                    <lightning-layout-item size="6" padding="around-small">
-                                        <p><strong>Refresh Schedule:</strong> {publishIntervalFormatted}</p>
-                                    </lightning-layout-item>
-                                    <lightning-layout-item size="6" padding="around-small">
-                                        <p><strong>Last Modified:</strong> {lastModifiedFormatted}</p>
-                                    </lightning-layout-item>
-                                </lightning-layout>
-                            </div>
-
-                            <!-- Last Refresh Health -->
-                            <div class="slds-box slds-m-bottom_medium">
-                                <p class="slds-text-title_caps slds-m-bottom_small">Refresh Health</p>
-                                <div class="slds-grid slds-gutters slds-wrap">
-                                    <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
-                                        <p class="slds-text-color_weak slds-text-body_small">Schedule</p>
-                                        <p><strong>{publishIntervalFormatted}</strong></p>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
-                                        <p class="slds-text-color_weak slds-text-body_small">Last Updated</p>
-                                        <p><strong>{refreshStatusLabel}</strong></p>
-                                    </div>
-                                </div>
+                                <!-- Alerts — only shown when needed -->
                                 <template lwc:if={isStale}>
-                                    <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-top_small" role="alert">
-                                        <lightning-icon icon-name="utility:clock" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                        <strong>Stale Data Warning:</strong> This segment has not been refreshed in {daysSinceRefresh} days. Population counts may not reflect current data.
+                                    <div class="seg-alert seg-alert_warning">
+                                        <lightning-icon icon-name="utility:clock" size="x-small" class="seg-alert-icon"></lightning-icon>
+                                        <span><strong>Stale Data —</strong> Not refreshed in {daysSinceRefresh} days. Population counts may not reflect current data.</span>
                                     </div>
                                 </template>
-                            </div>
-
-                            <!-- ── FEATURE 3: Criteria + Filter Limit Checker ── -->
-                            <template lwc:if={parsedCriteria}>
-                                <div class="slds-box slds-m-bottom_medium">
-                                    <p class="slds-text-title_caps slds-m-bottom_small">Segment Criteria</p>
-                                    <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_x-small">Filters applied to build this segment population</p>
-
-                                    <!-- Filter Count Bar -->
-                                    <template lwc:if={filterLimitCritical}>
-                                        <div class="slds-notify slds-notify_alert slds-theme_error slds-m-bottom_small" role="alert">
-                                            <lightning-icon icon-name="utility:error" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                            <strong>Critical: {filterCountLabel}</strong> — You are at the limit. Adding more filters will cause segment errors. Remove unused filters immediately.
-                                        </div>
-                                    </template>
-                                    <template lwc:elseif={filterLimitWarning}>
-                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_small" role="alert">
-                                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                            <strong>Warning: {filterCountLabel}</strong> — Approaching the 50-filter limit. Consider consolidating filters or removing unused criteria groups.
-                                        </div>
-                                    </template>
-
-                                    <!-- Readable Criteria -->
-                                    <div class="slds-box slds-theme_shade">
-                                        <p class="slds-text-body_regular">{parsedCriteria}</p>
+                                <template lwc:if={showDmoWarning}>
+                                    <div class="seg-alert seg-alert_warning">
+                                        <lightning-icon icon-name="utility:warning" size="x-small" class="seg-alert-icon"></lightning-icon>
+                                        <span><strong>Activation Warning —</strong> Built on Individual DMO, not Unified Individual. Activating may send duplicate profiles to the destination.</span>
                                     </div>
+                                </template>
+                                <template lwc:if={filterLimitCritical}>
+                                    <div class="seg-alert seg-alert_error">
+                                        <lightning-icon icon-name="utility:error" size="x-small" class="seg-alert-icon"></lightning-icon>
+                                        <span><strong>Filter Limit Critical —</strong> At the 50-filter limit. Adding more filters will cause segment errors.</span>
+                                    </div>
+                                </template>
+                                <template lwc:elseif={filterLimitWarning}>
+                                    <div class="seg-alert seg-alert_warning">
+                                        <lightning-icon icon-name="utility:warning" size="x-small" class="seg-alert-icon"></lightning-icon>
+                                        <span><strong>Filter Limit Warning —</strong> Approaching the 50-filter limit. Consider consolidating unused criteria groups.</span>
+                                    </div>
+                                </template>
 
-                                    <!-- Filter Count (non-warning state) -->
-                                    <template lwc:if={filterLimitWarning}>
-                                    </template>
-                                    <template lwc:else>
-                                        <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">{filterCountLabel}</p>
-                                    </template>
-
-                                </div>
-                            </template>
+                            </div>
 
                             <!-- Activation Readiness Panel -->
                             <div class="slds-box slds-m-bottom_medium">
@@ -249,41 +232,33 @@
                                 </template>
 
                                 <template lwc:if={activationReadiness}>
-                                    <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                                    <div class="ar-tiles slds-m-bottom_medium">
 
-                                        <div class="slds-col slds-size_1-of-3">
-                                            <div class="slds-box slds-text-align_center">
-                                                <p class="slds-text-title_caps slds-m-bottom_x-small">Publishable Reach</p>
-                                                <p class="slds-text-heading_large">{activationReadiness.total}</p>
-                                                <p class="slds-text-color_weak slds-text-body_small">Profiles in published snapshot</p>
-                                            </div>
+                                        <div class="ar-tile ar-tile_neutral">
+                                            <p class="ar-tile-label">Publishable Reach</p>
+                                            <p class="ar-tile-number">{activationReadiness.total}</p>
+                                            <p class="ar-tile-sub">Profiles in published snapshot</p>
                                         </div>
 
-                                        <div class="slds-col slds-size_1-of-3">
-                                            <div class="slds-box slds-text-align_center">
-                                                <p class="slds-text-title_caps slds-m-bottom_x-small">Email Reachable</p>
-                                                <p class="slds-text-heading_large">{emailCoveragePercent}%</p>
-                                                <p class="slds-text-color_weak">{activationReadiness.email} profiles</p>
-                                                <p class="slds-text-color_weak slds-text-body_small">Have at least one email address</p>
-                                            </div>
+                                        <div class={emailTileClass}>
+                                            <p class="ar-tile-label">Email Reachable</p>
+                                            <p class="ar-tile-number">{emailCoveragePercent}%</p>
+                                            <p class="ar-tile-sub">{activationReadiness.email} profiles</p>
                                         </div>
 
-                                        <div class="slds-col slds-size_1-of-3">
-                                            <div class="slds-box slds-text-align_center">
-                                                <p class="slds-text-title_caps slds-m-bottom_x-small">Phone Reachable</p>
-                                                <p class="slds-text-heading_large">{phoneCoveragePercent}%</p>
-                                                <p class="slds-text-color_weak">{activationReadiness.phone} profiles</p>
-                                                <p class="slds-text-color_weak slds-text-body_small">Have at least one phone number</p>
-                                            </div>
+                                        <div class={phoneTileClass}>
+                                            <p class="ar-tile-label">Phone Reachable</p>
+                                            <p class="ar-tile-number">{phoneCoveragePercent}%</p>
+                                            <p class="ar-tile-sub">{activationReadiness.phone} profiles</p>
                                         </div>
 
                                     </div>
 
                                     <!-- Missing Email -->
                                     <template lwc:if={emailDropWarning}>
-                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_x-small" role="alert">
-                                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                            <strong>{emailDropCount} profiles will be dropped on email activation</strong> — these profiles have no email contact point.
+                                        <div class="drop-alert slds-m-bottom_x-small">
+                                            <lightning-icon icon-name="utility:warning" size="x-small" class="drop-alert-icon"></lightning-icon>
+                                            <span><strong>{emailDropCount} profiles will be dropped on email activation</strong> — no email contact point.</span>
                                             <lightning-button
                                                 label={missingEmailButtonLabel}
                                                 variant="base"
@@ -320,9 +295,9 @@
 
                                     <!-- Missing Phone -->
                                     <template lwc:if={phoneDropWarning}>
-                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_x-small" role="alert">
-                                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                            <strong>{phoneDropCount} profiles will be dropped on phone/SMS activation</strong> — these profiles have no phone contact point.
+                                        <div class="drop-alert slds-m-bottom_x-small">
+                                            <lightning-icon icon-name="utility:warning" size="x-small" class="drop-alert-icon"></lightning-icon>
+                                            <span><strong>{phoneDropCount} profiles will be dropped on phone/SMS activation</strong> — no phone contact point.</span>
                                             <lightning-button
                                                 label={missingPhoneButtonLabel}
                                                 variant="base"
@@ -382,6 +357,13 @@
                             <span>{errorMessage}</span>
                         </div>
                     </template>
+
+                    </div><!-- close Segment Inspector box -->
+
+                    <!-- Segment Overlap — always visible, independent of selected segment -->
+                    <div class="slds-box sa-section">
+                        <c-segment-overlap></c-segment-overlap>
+                    </div>
 
                 </lightning-tab>
 

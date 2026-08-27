@@ -2,11 +2,14 @@ public with sharing class DataCloudService {
 
     private static final String API_VERSION = 'v66.0';
 
+    private static String cachedToken;
+
     private static String getBaseUrl() {
         return URL.getOrgDomainUrl().toExternalForm();
     }
 
     private static String getAccessToken() {
+        if (cachedToken != null) return cachedToken;
         DC_Lens_Config__c config = DC_Lens_Config__c.getInstance();
         if (config == null || config.Consumer_Key__c == null || config.Consumer_Secret__c == null) {
             throw new CalloutException('Data Cloud Insights Config custom setting is missing Consumer Key or Secret.');
@@ -25,7 +28,8 @@ public with sharing class DataCloudService {
         HttpResponse res = new Http().send(req);
         if (res.getStatusCode() == 200) {
             Map<String, Object> tokenResponse = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-            return (String) tokenResponse.get('access_token');
+            cachedToken = (String) tokenResponse.get('access_token');
+            return cachedToken;
         }
         throw new CalloutException('Failed to get access token: ' + res.getStatus() + ' ' + res.getBody());
     }
@@ -265,6 +269,163 @@ public with sharing class DataCloudService {
             }
         }
         return profiles;
+    }
+
+    public static List<Map<String, Object>> getSegmentOverlap() {
+        // Step 1 — fetch all segments
+        HttpResponse segRes = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=500');
+        if (segRes.getStatusCode() != 200) throw new CalloutException('Failed to load segments');
+        Map<String, Object> segBody = (Map<String, Object>) JSON.deserializeUntyped(segRes.getBody());
+        List<Object> allSegs = (List<Object>) segBody.get('segments');
+        if (allSegs == null || allSegs.isEmpty()) return new List<Map<String, Object>>();
+
+        // Collect active segments with non-zero population
+        List<Map<String, Object>> candidates = new List<Map<String, Object>>();
+        for (Object seg : allSegs) {
+            Map<String, Object> s = (Map<String, Object>) seg;
+            if (!'ACTIVE'.equals((String) s.get('segmentStatus'))) continue;
+            Integer memberCount = s.get('lastSegmentMemberCount') != null
+                ? Integer.valueOf(String.valueOf(s.get('lastSegmentMemberCount'))) : 0;
+            if (memberCount == 0) continue;
+            candidates.add(new Map<String, Object>{
+                'displayName' => (String) s.get('displayName'),
+                'apiName'     => (String) s.get('apiName'),
+                'memberCount' => memberCount
+            });
+        }
+
+        // Cap at 10 — 1 token + 1 list + 10 details + 45 pairs = 57 callouts max, well under the 100 limit
+        candidates.sort(new MemberCountComparator());
+        List<Map<String, Object>> top = new List<Map<String, Object>>();
+        for (Integer i = 0; i < Math.min(10, candidates.size()); i++) {
+            top.add(candidates[i]);
+        }
+
+        // Step 2 — resolve membershipTable and marketSegmentId from detail API per segment
+        for (Map<String, Object> seg : top) {
+            HttpResponse detailRes = makeGetRequest(
+                '/services/data/' + API_VERSION + '/ssot/segments/' + (String) seg.get('apiName')
+            );
+            if (detailRes.getStatusCode() != 200) continue;
+            Map<String, Object> detailBody = (Map<String, Object>) JSON.deserializeUntyped(detailRes.getBody());
+            List<Object> segsArr = (List<Object>) detailBody.get('segments');
+            if (segsArr == null || segsArr.isEmpty()) continue;
+            Map<String, Object> detail = (Map<String, Object>) segsArr[0];
+            // marketSegmentId is needed to filter Segment_Id__c in the shared membership table
+            String marketSegmentId = (String) detail.get('marketSegmentId');
+            if (!String.isBlank(marketSegmentId)) seg.put('marketSegmentId', marketSegmentId);
+            Map<String, Object> membershipDmo = (Map<String, Object>) detail.get('segmentMembershipDmo');
+            if (membershipDmo == null) continue;
+            String latestTable = (String) membershipDmo.get('latestTable');
+            if (!String.isBlank(latestTable)) seg.put('membershipTable', latestTable);
+        }
+
+        // Keep only segments where we have both table and segment ID
+        List<Map<String, Object>> withTable = new List<Map<String, Object>>();
+        for (Map<String, Object> seg : top) {
+            if (!String.isBlank((String) seg.get('membershipTable'))
+                && !String.isBlank((String) seg.get('marketSegmentId'))) {
+                withTable.add(seg);
+            }
+        }
+        if (withTable.size() < 2) return new List<Map<String, Object>>();
+
+        // Step 3 — fetch MAX(Timestamp__c) per segment for latest publish snapshot
+        // marketSegmentId from API is 18-char; Segment_Id__c stores 15-char — must truncate to match
+        for (Map<String, Object> seg : withTable) {
+            String table    = (String) seg.get('membershipTable');
+            String rawId    = (String) seg.get('marketSegmentId');
+            String segId15  = (rawId != null && rawId.length() >= 15) ? rawId.left(15) : rawId;
+            String safeId   = segId15 != null ? segId15.replace('\'', '\'\'') : '';
+            seg.put('segId15', safeId);
+            String tsSql = 'SELECT MAX(Timestamp__c) AS maxTs FROM ' + table
+                         + ' WHERE Segment_Id__c = \'' + safeId + '\'';
+            HttpResponse tsRes = makePostRequest(
+                '/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default',
+                '{"sql": "' + tsSql.escapeJava() + '"}'
+            );
+            if (tsRes.getStatusCode() == 200 || tsRes.getStatusCode() == 201) {
+                Map<String, Object> tsBody = (Map<String, Object>) JSON.deserializeUntyped(tsRes.getBody());
+                List<Object> rows = (List<Object>) tsBody.get('data');
+                if (rows != null && !rows.isEmpty()) {
+                    List<Object> firstRow = (List<Object>) rows[0];
+                    if (firstRow != null && !firstRow.isEmpty() && firstRow[0] != null) {
+                        seg.put('latestTs', String.valueOf(firstRow[0]).replace('\'', '\'\''));
+                    }
+                }
+            }
+        }
+
+        // Step 4 — one COUNT JOIN query per pair, filtered by Segment_Id__c + latest snapshot + not removed
+        List<Map<String, Object>> pairs = new List<Map<String, Object>>();
+        for (Integer i = 0; i < withTable.size(); i++) {
+            for (Integer j = i + 1; j < withTable.size(); j++) {
+                String tableA = (String) withTable[i].get('membershipTable');
+                String tableB = (String) withTable[j].get('membershipTable');
+                String segIdA = (String) withTable[i].get('segId15');
+                String segIdB = (String) withTable[j].get('segId15');
+                String tsA    = (String) withTable[i].get('latestTs');
+                String tsB    = (String) withTable[j].get('latestTs');
+                // Skip pairs where timestamp couldn't be resolved — would produce wrong counts
+                if (String.isBlank(tsA) || String.isBlank(tsB)) continue;
+
+                String sql = 'SELECT COUNT() FROM ' + tableA + ' a '
+                           + 'INNER JOIN ' + tableB + ' b ON a.Id__c = b.Id__c '
+                           + 'WHERE a.Segment_Id__c = \'' + segIdA + '\''
+                           + ' AND b.Segment_Id__c = \'' + segIdB + '\''
+                           + ' AND a.Timestamp__c = \'' + tsA + '\''
+                           + ' AND b.Timestamp__c = \'' + tsB + '\''
+                           + ' AND a.Delta_Type__c <> \'removed\''
+                           + ' AND b.Delta_Type__c <> \'removed\'';
+
+                HttpResponse qRes = makePostRequest(
+                    '/services/data/' + API_VERSION + '/ssot/query-sql?dataspace=default',
+                    '{"sql": "' + sql.escapeJava() + '"}'
+                );
+                Integer overlap = 0;
+                if (qRes.getStatusCode() == 200 || qRes.getStatusCode() == 201) {
+                    overlap = extractCount(qRes);
+                }
+                if (overlap == 0) continue;
+                Integer countA = (Integer) withTable[i].get('memberCount');
+                Integer countB = (Integer) withTable[j].get('memberCount');
+                Integer smaller = Math.min(countA, countB);
+                Decimal pct = smaller > 0 ? ((Decimal) overlap / smaller * 100).setScale(1) : 0;
+                if (pct < 25) continue;
+                pairs.add(new Map<String, Object>{
+                    'segmentA'     => (String) withTable[i].get('displayName'),
+                    'segmentB'     => (String) withTable[j].get('displayName'),
+                    'countA'       => countA,
+                    'countB'       => countB,
+                    'overlapCount' => overlap,
+                    'overlapPct'   => pct
+                });
+            }
+        }
+
+        // Sort by overlap count descending, return top 20
+        pairs.sort(new OverlapCountComparator());
+        List<Map<String, Object>> topPairs = new List<Map<String, Object>>();
+        for (Integer i = 0; i < Math.min(20, pairs.size()); i++) {
+            topPairs.add(pairs[i]);
+        }
+        return topPairs;
+    }
+
+    private class MemberCountComparator implements Comparator<Map<String, Object>> {
+        public Integer compare(Map<String, Object> a, Map<String, Object> b) {
+            Integer ca = (Integer) a.get('memberCount');
+            Integer cb = (Integer) b.get('memberCount');
+            return cb - ca;
+        }
+    }
+
+    private class OverlapCountComparator implements Comparator<Map<String, Object>> {
+        public Integer compare(Map<String, Object> a, Map<String, Object> b) {
+            Integer ca = (Integer) a.get('overlapCount');
+            Integer cb = (Integer) b.get('overlapCount');
+            return cb - ca;
+        }
     }
 
     public static String queryDataCloud(String sql) {

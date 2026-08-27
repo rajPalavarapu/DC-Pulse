@@ -34,7 +34,7 @@ private class DataCloudServiceTest {
         setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
-        Map<String, Integer> result = DataCloudService.getActivationReadiness('TestMembershipTable__dlm', 'UnifiedIndividual__dlm');
+        Map<String, Integer> result = DataCloudService.getActivationReadiness('TestMembershipTable__dlm', 'UnifiedIndividual__dlm', 'testSegId123');
         Test.stopTest();
         System.assertNotEquals(null, result);
         System.assert(result.containsKey('total'));
@@ -47,7 +47,7 @@ private class DataCloudServiceTest {
         setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout('emptyData'));
         Test.startTest();
-        Map<String, Integer> result = DataCloudService.getActivationReadiness('TestMembershipTable__dlm', 'UnifiedIndividual__dlm');
+        Map<String, Integer> result = DataCloudService.getActivationReadiness('TestMembershipTable__dlm', 'UnifiedIndividual__dlm', 'testSegId123');
         Test.stopTest();
         System.assertEquals(0, result.get('total'));
     }

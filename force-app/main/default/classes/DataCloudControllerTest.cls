@@ -33,7 +33,7 @@ private class DataCloudControllerTest {
         setupConfig();
         Test.setMock(HttpCalloutMock.class, new DataCloudMockCallout());
         Test.startTest();
-        Map<String, Integer> result = DataCloudController.getActivationReadiness('TestTable__dlm', 'UnifiedIndividual__dlm');
+        Map<String, Integer> result = DataCloudController.getActivationReadiness('TestTable__dlm', 'UnifiedIndividual__dlm', 'testSegId123');
         Test.stopTest();
         System.assertNotEquals(null, result);
     }

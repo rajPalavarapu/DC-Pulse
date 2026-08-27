@@ -245,6 +245,33 @@ export default class SegmentExplainer extends LightningElement {
             (!this.selectedSegmentData.lookbackPeriod || this.selectedSegmentData.lookbackPeriod === 'P0D');
     }
 
+    get statusBadgeClass() {
+        const status = this.selectedSegmentData && this.selectedSegmentData.segmentStatus;
+        if (!status) return 'seg-status-badge seg-status-badge_default';
+        const s = status.toUpperCase();
+        if (s === 'ACTIVE') return 'seg-status-badge seg-status-badge_active';
+        if (s === 'INACTIVE') return 'seg-status-badge seg-status-badge_inactive';
+        return 'seg-status-badge seg-status-badge_default';
+    }
+
+    get refreshStatusClass() {
+        return this.isStale ? 'seg-field-value seg-field-value_stale' : 'seg-field-value';
+    }
+
+    get emailTileClass() {
+        const pct = this.emailCoveragePercent;
+        if (pct >= 60) return 'ar-tile ar-tile_good';
+        if (pct >= 30) return 'ar-tile ar-tile_warn';
+        return 'ar-tile ar-tile_bad';
+    }
+
+    get phoneTileClass() {
+        const pct = this.phoneCoveragePercent;
+        if (pct >= 40) return 'ar-tile ar-tile_good';
+        if (pct >= 20) return 'ar-tile ar-tile_warn';
+        return 'ar-tile ar-tile_bad';
+    }
+
     get builtOnLabel() {
         const raw = this.selectedSegmentData && this.selectedSegmentData.segmentOnApiName;
         if (!raw) return '';
