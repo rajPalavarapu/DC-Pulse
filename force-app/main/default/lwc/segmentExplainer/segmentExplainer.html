@@ -178,6 +178,13 @@
                                         <span class="seg-field-label">Last Modified</span>
                                         <span class="seg-meta-value">{lastModifiedFormatted}</span>
                                     </div>
+                                    <template lwc:if={hasMembershipTable}>
+                                        <div class="seg-meta-sep"></div>
+                                        <div class="seg-meta-field">
+                                            <span class="seg-field-label">Membership Table</span>
+                                            <span class="seg-meta-value">{selectedSegmentData.segmentMembershipDmo.latestTable}</span>
+                                        </div>
+                                    </template>
                                     <template lwc:if={parsedCriteria}>
                                         <div class="seg-meta-sep"></div>
                                         <div class="seg-meta-field seg-meta-field_grow">
