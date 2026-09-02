@@ -139,16 +139,26 @@ public with sharing class DataCloudService {
         List<Object> segments = (List<Object>) body.get('segments');
         if (segments == null) return results;
         String lowerSearch = searchTerm.toLowerCase();
+        String lowerSearchUnderscored = lowerSearch.replace(' ', '_');
         for (Object seg : segments) {
             Map<String, Object> s = (Map<String, Object>) seg;
             String displayName = (String) s.get('displayName');
-            String apiName = (String) s.get('apiName');
-            Boolean matchesDisplay = displayName != null && displayName.toLowerCase().contains(lowerSearch);
-            Boolean matchesApi = apiName != null && apiName.toLowerCase().contains(lowerSearch);
-            if (matchesDisplay || matchesApi) {
+            String apiName    = (String) s.get('apiName');
+            String nameField  = (String) s.get('name');
+            String lowerDisplay = displayName != null ? displayName.toLowerCase() : '';
+            String lowerApi     = apiName    != null ? apiName.toLowerCase()     : '';
+            String lowerName    = nameField  != null ? nameField.toLowerCase()   : '';
+            Boolean matches = lowerDisplay.contains(lowerSearch)
+                || lowerApi.contains(lowerSearch)
+                || lowerApi.contains(lowerSearchUnderscored)
+                || lowerApi.replace('_', ' ').contains(lowerSearch)
+                || lowerName.contains(lowerSearch);
+            if (matches) {
+                String label = displayName != null ? displayName
+                             : (nameField  != null ? nameField : apiName);
                 results.add(new Map<String, Object>{
                     'apiName' => apiName,
-                    'displayName' => displayName != null ? displayName : apiName,
+                    'displayName' => label,
                     'segmentStatus' => s.get('segmentStatus'),
                     'lastSegmentMemberCount' => s.get('lastSegmentMemberCount')
                 });
