@@ -132,7 +132,7 @@ public with sharing class DataCloudService {
     }
 
     public static List<Map<String, Object>> searchSegments(String searchTerm) {
-        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=2000');
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=500');
         List<Map<String, Object>> results = new List<Map<String, Object>>();
         if (res.getStatusCode() != 200) return results;
         Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
@@ -142,10 +142,13 @@ public with sharing class DataCloudService {
         for (Object seg : segments) {
             Map<String, Object> s = (Map<String, Object>) seg;
             String displayName = (String) s.get('displayName');
-            if (displayName != null && displayName.toLowerCase().contains(lowerSearch)) {
+            String apiName = (String) s.get('apiName');
+            Boolean matchesDisplay = displayName != null && displayName.toLowerCase().contains(lowerSearch);
+            Boolean matchesApi = apiName != null && apiName.toLowerCase().contains(lowerSearch);
+            if (matchesDisplay || matchesApi) {
                 results.add(new Map<String, Object>{
-                    'apiName' => s.get('apiName'),
-                    'displayName' => displayName,
+                    'apiName' => apiName,
+                    'displayName' => displayName != null ? displayName : apiName,
                     'segmentStatus' => s.get('segmentStatus'),
                     'lastSegmentMemberCount' => s.get('lastSegmentMemberCount')
                 });
