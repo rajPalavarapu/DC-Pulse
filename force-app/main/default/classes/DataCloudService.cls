@@ -198,12 +198,12 @@ public with sharing class DataCloudService {
 
         String totalSql = 'SELECT COUNT() FROM ' + membershipTable + baseFilter;
 
-        String emailSql = 'SELECT COUNT() AS cnt FROM ' + membershipTable + ' mem ' +
+        String emailSql = 'SELECT COUNT(DISTINCT mem.Id__c) AS cnt FROM ' + membershipTable + ' mem ' +
             'LEFT JOIN IndividualIdentityLink__dlm lnk ON mem.Id__c = lnk.UnifiedRecordId__c ' +
             'LEFT JOIN ssot__ContactPointEmail__dlm cpe ON lnk.SourceRecordId__c = cpe.ssot__PartyId__c ' +
             'WHERE cpe.ssot__Id__c IS NOT NULL' + joinFilter;
 
-        String phoneSql = 'SELECT COUNT() AS cnt FROM ' + membershipTable + ' mem ' +
+        String phoneSql = 'SELECT COUNT(DISTINCT mem.Id__c) AS cnt FROM ' + membershipTable + ' mem ' +
             'LEFT JOIN IndividualIdentityLink__dlm lnk ON mem.Id__c = lnk.UnifiedRecordId__c ' +
             'LEFT JOIN ssot__ContactPointPhone__dlm cpp ON lnk.SourceRecordId__c = cpp.ssot__PartyId__c ' +
             'WHERE cpp.ssot__Id__c IS NOT NULL' + joinFilter;

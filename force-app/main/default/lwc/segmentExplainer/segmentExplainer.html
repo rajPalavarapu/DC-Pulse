@@ -254,6 +254,13 @@
 
                                     </div>
 
+                                    <template lwc:if={emptySnapshotWarning}>
+                                        <div class="drop-alert slds-m-bottom_x-small">
+                                            <lightning-icon icon-name="utility:info" size="x-small" class="drop-alert-icon"></lightning-icon>
+                                            <span>This segment has <strong>{selectedSegmentData.lastSegmentMemberCount} profiles</strong> but no published snapshot exists. Activate this segment to populate publishable reach.</span>
+                                        </div>
+                                    </template>
+
                                     <!-- Missing Email -->
                                     <template lwc:if={emailDropWarning}>
                                         <div class="drop-alert slds-m-bottom_x-small">

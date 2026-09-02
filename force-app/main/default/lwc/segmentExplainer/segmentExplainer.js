@@ -307,6 +307,13 @@ export default class SegmentExplainer extends LightningElement {
         return this.activationReadiness.total - this.activationReadiness.phone;
     }
 
+    get emptySnapshotWarning() {
+        return this.activationReadiness &&
+               this.activationReadiness.total === 0 &&
+               this.selectedSegmentData &&
+               this.selectedSegmentData.lastSegmentMemberCount > 0;
+    }
+
     get emailDropWarning() {
         return this.emailDropCount > 0;
     }
