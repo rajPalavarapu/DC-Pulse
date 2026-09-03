@@ -66,7 +66,7 @@ public with sharing class DataCloudService {
     }
 
     public static List<Map<String, Object>> getSegmentsByCategory(String category) {
-        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=2000');
+        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=500');
         List<Map<String, Object>> results = new List<Map<String, Object>>();
         if (res.getStatusCode() != 200) return results;
         Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());

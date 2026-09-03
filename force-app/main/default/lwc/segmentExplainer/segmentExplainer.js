@@ -105,7 +105,26 @@ export default class SegmentExplainer extends LightningElement {
         this.showResults = true;
         searchSegments({ searchTerm: term })
             .then(results => {
-                this.searchResults = results;
+                if (results && results.length > 0) {
+                    this.searchResults = results;
+                } else {
+                    // Fallback: try loading the term directly as an API name
+                    const apiNameGuess = term.replace(/ /g, '_');
+                    return getSegmentDetails({ segmentApiName: apiNameGuess })
+                        .then(raw => {
+                            const parsed = JSON.parse(raw);
+                            const segs = parsed.segments || [];
+                            this.searchResults = segs.map(s => ({
+                                apiName: s.apiName,
+                                displayName: s.displayName || s.name || s.apiName,
+                                segmentStatus: s.segmentStatus,
+                                lastSegmentMemberCount: s.lastSegmentMemberCount || 0
+                            }));
+                        })
+                        .catch(() => {
+                            this.searchResults = [];
+                        });
+                }
             })
             .catch(error => {
                 this.errorMessage = 'Search failed: ' + (error.body ? error.body.message : error.message);
