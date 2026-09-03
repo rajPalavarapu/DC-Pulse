@@ -1,8 +1,8 @@
 {
   "packageDirectories": [
     {
-      "versionName": "ver 0.13",
-      "versionNumber": "0.13.0.NEXT",
+      "versionName": "ver 0.15",
+      "versionNumber": "0.15.0.NEXT",
       "path": "force-app",
       "default": true,
       "package": "Data Cloud Pulse",
@@ -31,6 +31,8 @@
     "Data Cloud Pulse@0.9.0-1": "04tgK000000JLn7QAG",
     "Data Cloud Pulse@0.10.0-1": "04tgK000000JMT3QAO",
     "Data Cloud Pulse@0.11.0-1": "04tgK000000JMUfQAO",
-    "Data Cloud Pulse@0.13.0-1": "04tgK000000JOufQAG"
+    "Data Cloud Pulse@0.13.0-1": "04tgK000000JOufQAG",
+    "Data Cloud Pulse@0.14.0-1": "04tgK000000JTKrQAO",
+    "Data Cloud Pulse@0.14.0-2": "04tgK000000JTMTQA4"
   }
 }

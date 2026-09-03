@@ -66,37 +66,43 @@ public with sharing class DataCloudService {
     }
 
     public static List<Map<String, Object>> getSegmentsByCategory(String category) {
-        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=500');
         List<Map<String, Object>> results = new List<Map<String, Object>>();
-        if (res.getStatusCode() != 200) return results;
-        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-        List<Object> segments = (List<Object>) body.get('segments');
-        if (segments == null) return results;
-        for (Object seg : segments) {
-            Map<String, Object> s = (Map<String, Object>) seg;
-            Integer memberCount = s.get('lastSegmentMemberCount') != null
-                ? Integer.valueOf(String.valueOf(s.get('lastSegmentMemberCount'))) : 0;
-            String status   = (String) s.get('segmentStatus');
-            String interval = (String) s.get('publishInterval');
-            Boolean match = false;
-            if (category == 'zero'     && memberCount == 0) match = true;
-            if (category == 'inactive' && 'INACTIVE'.equals(status)) match = true;
-            if (category == 'manual'   && 'NO_REFRESH'.equals(interval)) match = true;
-            if (match) {
-                results.add(new Map<String, Object>{
-                    'displayName'           => s.get('displayName'),
-                    'apiName'               => s.get('apiName'),
-                    'segmentStatus'         => status,
-                    'lastSegmentMemberCount'=> memberCount,
-                    'publishInterval'       => interval
-                });
+        String nextUrl = '/services/data/' + API_VERSION + '/ssot/segments?limit=500';
+        Integer pagesFetched = 0;
+        while (nextUrl != null && pagesFetched < 10) {
+            HttpResponse res = makeGetRequest(nextUrl);
+            if (res.getStatusCode() != 200) break;
+            Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+            List<Object> segments = (List<Object>) body.get('segments');
+            if (segments == null || segments.isEmpty()) break;
+            for (Object seg : segments) {
+                Map<String, Object> s = (Map<String, Object>) seg;
+                Integer memberCount = s.get('lastSegmentMemberCount') != null
+                    ? Integer.valueOf(String.valueOf(s.get('lastSegmentMemberCount'))) : 0;
+                String status   = (String) s.get('segmentStatus');
+                String interval = (String) s.get('publishInterval');
+                Boolean match = false;
+                if (category == 'zero'     && memberCount == 0) match = true;
+                if (category == 'inactive' && 'INACTIVE'.equals(status)) match = true;
+                if (category == 'manual'   && 'NO_REFRESH'.equals(interval)) match = true;
+                if (match) {
+                    results.add(new Map<String, Object>{
+                        'displayName'           => s.get('displayName'),
+                        'apiName'               => s.get('apiName'),
+                        'segmentStatus'         => status,
+                        'lastSegmentMemberCount'=> memberCount,
+                        'publishInterval'       => interval
+                    });
+                }
             }
+            pagesFetched++;
+            String rawNext = (String) body.get('nextPageUrl');
+            nextUrl = String.isBlank(rawNext) ? null : rawNext;
         }
         return results;
     }
 
     public static Map<String, Object> getSegmentHealthSummary() {
-        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=500');
         Map<String, Object> summary = new Map<String, Object>{
             'totalCount' => 0, 'zeroPopulationCount' => 0,
             'inactiveCount' => 0, 'manualRefreshCount' => 0,
@@ -104,24 +110,33 @@ public with sharing class DataCloudService {
             'inactiveNames' => new List<String>(),
             'manualRefreshNames' => new List<String>()
         };
-        if (res.getStatusCode() != 200) return summary;
-        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-        List<Object> segments = (List<Object>) body.get('segments');
-        if (segments == null) return summary;
-        Integer zeroCount = 0, inactiveCount = 0, manualCount = 0;
+        Integer zeroCount = 0, inactiveCount = 0, manualCount = 0, totalCount = 0;
         List<String> zeroNames = new List<String>(), inactiveNames = new List<String>(), manualNames = new List<String>();
-        for (Object seg : segments) {
-            Map<String, Object> s = (Map<String, Object>) seg;
-            String displayName = (String) s.get('displayName');
-            Integer memberCount = s.get('lastSegmentMemberCount') != null
-                ? Integer.valueOf(String.valueOf(s.get('lastSegmentMemberCount'))) : 0;
-            String status = (String) s.get('segmentStatus');
-            String interval = (String) s.get('publishInterval');
-            if (memberCount == 0) { zeroCount++; if (zeroNames.size() < 5) zeroNames.add(displayName); }
-            if ('INACTIVE'.equals(status)) { inactiveCount++; if (inactiveNames.size() < 5) inactiveNames.add(displayName); }
-            if ('NO_REFRESH'.equals(interval)) { manualCount++; if (manualNames.size() < 5) manualNames.add(displayName); }
+        String nextUrl = '/services/data/' + API_VERSION + '/ssot/segments?limit=500';
+        Integer pagesFetched = 0;
+        while (nextUrl != null && pagesFetched < 10) {
+            HttpResponse res = makeGetRequest(nextUrl);
+            if (res.getStatusCode() != 200) break;
+            Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+            List<Object> segments = (List<Object>) body.get('segments');
+            if (segments == null || segments.isEmpty()) break;
+            for (Object seg : segments) {
+                Map<String, Object> s = (Map<String, Object>) seg;
+                String displayName = (String) s.get('displayName');
+                Integer memberCount = s.get('lastSegmentMemberCount') != null
+                    ? Integer.valueOf(String.valueOf(s.get('lastSegmentMemberCount'))) : 0;
+                String status = (String) s.get('segmentStatus');
+                String interval = (String) s.get('publishInterval');
+                totalCount++;
+                if (memberCount == 0) { zeroCount++; if (zeroNames.size() < 5) zeroNames.add(displayName); }
+                if ('INACTIVE'.equals(status)) { inactiveCount++; if (inactiveNames.size() < 5) inactiveNames.add(displayName); }
+                if ('NO_REFRESH'.equals(interval)) { manualCount++; if (manualNames.size() < 5) manualNames.add(displayName); }
+            }
+            pagesFetched++;
+            String rawNext = (String) body.get('nextPageUrl');
+            nextUrl = String.isBlank(rawNext) ? null : rawNext;
         }
-        summary.put('totalCount', segments.size());
+        summary.put('totalCount', totalCount);
         summary.put('zeroPopulationCount', zeroCount);
         summary.put('inactiveCount', inactiveCount);
         summary.put('manualRefreshCount', manualCount);
@@ -132,38 +147,46 @@ public with sharing class DataCloudService {
     }
 
     public static List<Map<String, Object>> searchSegments(String searchTerm) {
-        HttpResponse res = makeGetRequest('/services/data/' + API_VERSION + '/ssot/segments?limit=500');
         List<Map<String, Object>> results = new List<Map<String, Object>>();
-        if (res.getStatusCode() != 200) return results;
-        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-        List<Object> segments = (List<Object>) body.get('segments');
-        if (segments == null) return results;
         String lowerSearch = searchTerm.toLowerCase();
         String lowerSearchUnderscored = lowerSearch.replace(' ', '_');
-        for (Object seg : segments) {
-            Map<String, Object> s = (Map<String, Object>) seg;
-            String displayName = (String) s.get('displayName');
-            String apiName    = (String) s.get('apiName');
-            String nameField  = (String) s.get('name');
-            String lowerDisplay = displayName != null ? displayName.toLowerCase() : '';
-            String lowerApi     = apiName    != null ? apiName.toLowerCase()     : '';
-            String lowerName    = nameField  != null ? nameField.toLowerCase()   : '';
-            Boolean matches = lowerDisplay.contains(lowerSearch)
-                || lowerApi.contains(lowerSearch)
-                || lowerApi.contains(lowerSearchUnderscored)
-                || lowerApi.replace('_', ' ').contains(lowerSearch)
-                || lowerName.contains(lowerSearch);
-            if (matches) {
-                String label = displayName != null ? displayName
-                             : (nameField  != null ? nameField : apiName);
-                results.add(new Map<String, Object>{
-                    'apiName' => apiName,
-                    'displayName' => label,
-                    'segmentStatus' => s.get('segmentStatus'),
-                    'lastSegmentMemberCount' => s.get('lastSegmentMemberCount')
-                });
-                if (results.size() >= 20) break;
+        String nextUrl = '/services/data/' + API_VERSION + '/ssot/segments?limit=500';
+        Integer pagesFetched = 0;
+        while (nextUrl != null && pagesFetched < 10 && results.size() < 20) {
+            HttpResponse res = makeGetRequest(nextUrl);
+            if (res.getStatusCode() != 200) break;
+            Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+            List<Object> segments = (List<Object>) body.get('segments');
+            if (segments == null || segments.isEmpty()) break;
+            for (Object seg : segments) {
+                Map<String, Object> s = (Map<String, Object>) seg;
+                String displayName = (String) s.get('displayName');
+                String apiName    = (String) s.get('apiName');
+                String nameField  = (String) s.get('name');
+                String lowerDisplay = displayName != null ? displayName.toLowerCase() : '';
+                String lowerApi     = apiName    != null ? apiName.toLowerCase()     : '';
+                String lowerName    = nameField  != null ? nameField.toLowerCase()   : '';
+                Boolean matches = lowerDisplay.contains(lowerSearch)
+                    || lowerApi.contains(lowerSearch)
+                    || lowerApi.contains(lowerSearchUnderscored)
+                    || lowerApi.replace('_', ' ').contains(lowerSearch)
+                    || lowerName.contains(lowerSearch);
+                if (matches) {
+                    String label = displayName != null ? displayName
+                                 : (nameField  != null ? nameField : apiName);
+                    results.add(new Map<String, Object>{
+                        'apiName' => apiName,
+                        'displayName' => label,
+                        'segmentStatus' => s.get('segmentStatus'),
+                        'lastSegmentMemberCount' => s.get('lastSegmentMemberCount')
+                    });
+                    if (results.size() >= 20) break;
+                }
             }
+            pagesFetched++;
+            // Follow nextPageUrl if more segments exist
+            String rawNext = (String) body.get('nextPageUrl');
+            nextUrl = String.isBlank(rawNext) ? null : rawNext;
         }
         return results;
     }
